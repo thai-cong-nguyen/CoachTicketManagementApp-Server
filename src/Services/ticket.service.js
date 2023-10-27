@@ -4,6 +4,108 @@ const { Op } = require("sequelize");
 const db = require("../Models/index");
 const apiReturns = require("../Helpers/apiReturns.helper");
 
+const getTicket = async ({ queries, ...query }) => {
+  const reservations = await db.Reservation.findAndCountAll({
+    where: query,
+    attributes: {
+      exclude: ["passengerId", "createdAt", "updatedAt"],
+    },
+    include: [
+      {
+        model: db.Schedule,
+        as: "ScheduleData",
+        attributes: { exclude: ["createdAt", "updatedAt"] },
+        include: [
+          {
+            model: db.Coach,
+            as: "CoachData",
+            attributes: { exclude: ["createdAt", "updatedAt"] },
+            include: [
+              {
+                model: db.CoachType,
+                as: "CoachTypeData",
+                attributes: { exclude: ["createdAt", "updatedAt"] },
+              },
+            ],
+          },
+          {
+            model: db.Route,
+            as: "RouteData",
+            attributes: { exclude: ["createdAt", "updatedAt"] },
+          },
+          {
+            model: db.Staff,
+            as: "DriverData",
+            attributes: ["id", "fullName", "phoneNumber", "gender"],
+          },
+          {
+            model: db.Staff,
+            as: "CoachAssistantData",
+            attributes: ["id", "fullName", "phoneNumber", "gender"],
+          },
+          {
+            model: db.Places,
+            as: "StartPlaceData",
+            attributes: { exclude: ["createdAt", "updatedAt"] },
+          },
+          {
+            model: db.Places,
+            as: "ArrivalPlaceData",
+            attributes: { exclude: ["createdAt", "updatedAt"] },
+          },
+        ],
+      },
+      {
+        model: db.Passenger,
+        as: "PassengerData",
+        attributes: ["id", "fullName", "phoneNumber", "gender"],
+      },
+      {
+        model: db.UserAccount,
+        as: "UserAccountData",
+        attributes: ["id", "userName"],
+      },
+    ],
+  });
+  const tickets = reservations.rows.reduce((acc, curr) => {
+    const found = acc.find(
+      (item) =>
+        item.ScheduleData.scheduleId === curr.ScheduleData.scheduleId &&
+        item.UserAccountData.userId === curr.UserAccountData.userId &&
+        new Date(item.reservationDate).getTime() ===
+          new Date(curr.reservationDate).getTime()
+    );
+    if (found) {
+      found.reservationId.push(curr.id);
+      found.seatNumber.push(curr.seatNumber);
+      found.PassengerData.push(curr.PassengerData);
+      found.totalPrice += curr.ScheduleData.price;
+    } else {
+      acc.push({
+        reservationId: [curr.id],
+        reservationPhoneNumber: curr.reservationPhoneNumber,
+        seatNumber: [curr.seatNumber],
+        reservationDate: curr.reservationDate,
+        paymentId: curr.paymentId,
+        discountId: curr.discountId,
+        status: curr.status,
+        note: curr.note,
+        totalPrice: curr.ScheduleData.price,
+        status: curr.status,
+        departurePoint: curr.departurePoint,
+        arrivalPoint: curr.arrivalPoint,
+        isShuttle: curr.isShuttle,
+        isRoundTrip: curr.isRoundTrip,
+        PassengerData: [curr.PassengerData],
+        ScheduleData: curr.ScheduleData,
+        UserAccountData: curr.UserAccountData,
+      });
+    }
+    return acc;
+  }, []);
+  return tickets;
+};
+
 const getAllTickets = async ({ page, limit, order, ...query }) => {
   try {
     const queries = { raw: true, nest: true };
@@ -12,110 +114,15 @@ const getAllTickets = async ({ page, limit, order, ...query }) => {
     queries.offset = offset * flimit;
     queries.limit = flimit;
     if (order) queries.order = order;
-    const reservations = await db.Reservation.findAndCountAll({
-      where: query,
-      attributes: {
-        exclude: ["passengerId", "createdAt", "updatedAt"],
-      },
-      ...queries,
-      include: [
-        {
-          model: db.Schedule,
-          as: "ScheduleData",
-          attributes: { exclude: ["createdAt", "updatedAt"] },
-          include: [
-            {
-              model: db.Coach,
-              as: "CoachData",
-              attributes: { exclude: ["createdAt", "updatedAt"] },
-              include: [
-                {
-                  model: db.CoachType,
-                  as: "CoachTypeData",
-                  attributes: { exclude: ["createdAt", "updatedAt"] },
-                },
-              ],
-            },
-            {
-              model: db.Route,
-              as: "RouteData",
-              attributes: { exclude: ["createdAt", "updatedAt"] },
-            },
-            {
-              model: db.Staff,
-              as: "DriverData",
-              attributes: ["id", "fullName", "phoneNumber", "gender"],
-            },
-            {
-              model: db.Staff,
-              as: "CoachAssistantData",
-              attributes: ["id", "fullName", "phoneNumber", "gender"],
-            },
-            {
-              model: db.Places,
-              as: "StartPlaceData",
-              attributes: { exclude: ["createdAt", "updatedAt"] },
-            },
-            {
-              model: db.Places,
-              as: "ArrivalPlaceData",
-              attributes: { exclude: ["createdAt", "updatedAt"] },
-            },
-          ],
-        },
-        {
-          model: db.Passenger,
-          as: "PassengerData",
-          attributes: ["id", "fullName", "phoneNumber", "gender"],
-        },
-        {
-          model: db.UserAccount,
-          as: "UserAccountData",
-          attributes: ["id", "userName"],
-        },
-      ],
-    });
-    const tickets = reservations.rows.reduce((acc, curr) => {
-      const found = acc.find(
-        (item) =>
-          item.ScheduleData.scheduleId === curr.ScheduleData.scheduleId &&
-          item.UserAccountData.userId === curr.UserAccountData.userId &&
-          new Date(item.reservationDate).getTime() ===
-            new Date(curr.reservationDate).getTime()
-      );
-      if (found) {
-        found.reservationId.push(curr.id);
-        found.seatNumber.push(curr.seatNumber);
-        found.PassengerData.push(curr.PassengerData);
-        found.totalPrice += curr.ScheduleData.price;
-      } else {
-        acc.push({
-          reservationId: [curr.id],
-          reservationPhoneNumber: curr.reservationPhoneNumber,
-          seatNumber: [curr.seatNumber],
-          reservationDate: curr.reservationDate,
-          paymentId: curr.paymentId,
-          discountId: curr.discountId,
-          note: curr.note,
-          totalPrice: curr.ScheduleData.price,
-          status: curr.status,
-          departurePoint: curr.departurePoint,
-          arrivalPoint: curr.arrivalPoint,
-          isShuttle: curr.isShuttle,
-          isRoundTrip: curr.isRoundTrip,
-          PassengerData: [curr.PassengerData],
-          ScheduleData: curr.ScheduleData,
-          UserAccountData: curr.UserAccountData,
-        });
-      }
-      return acc;
-    }, []);
+    const tickets = await getTicket({ queries, ...query });
     return apiReturns.success(200, "Get Successfully", tickets);
   } catch (error) {
     console.error(error.message);
     return apiReturns.error(400, error.message);
   }
 };
+
+const getAllTicketsOfUsers = async (rawData) => {};
 
 const fillTicketInfo = async (rawData) => {
   try {
@@ -141,7 +148,7 @@ const fillTicketInfo = async (rawData) => {
     return apiReturns.error(400, error.message);
   }
 };
-
+//
 const changeSeatTicket = async (rawData) => {
   try {
     const data = rawData.body;

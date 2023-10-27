@@ -12,6 +12,7 @@ module.exports = {
       userId: {
         allowNull: true,
         type: Sequelize.BIGINT,
+        references: { model: "UserAccounts", key: "id" },
       },
       value: {
         allowNull: false,
@@ -24,14 +25,6 @@ module.exports = {
       title: {
         allowNull: false,
         type: Sequelize.STRING,
-      },
-      createdAt: {
-        allowNull: false,
-        type: Sequelize.DATE,
-      },
-      updatedAt: {
-        allowNull: false,
-        type: Sequelize.DATE,
       },
     });
   },

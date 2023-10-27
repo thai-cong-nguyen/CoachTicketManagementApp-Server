@@ -1,13 +1,11 @@
 const { modes } = require("tar");
 const db = require("../Models/index");
 const jwt = require("jsonwebtoken");
-const JWT_SECRET = process.env.JWT_SECRET;
-const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN;
 
-const createJWT = (payload) => {
+const createJWT = (payload, secret, expiresIn) => {
   let token = null;
   try {
-    token = jwt.sign(payload, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });
+    token = jwt.sign(payload, secret, { expiresIn: expiresIn });
   } catch (error) {
     console.error(error);
   }

@@ -12,20 +12,26 @@ module.exports = {
       shuttleId: {
         allowNull: false,
         type: Sequelize.BIGINT,
+        references: { model: "Shuttles", key: "id" },
       },
       departureTime: {
         defaultValue: Sequelize.NOW,
         allowNull: false,
         type: Sequelize.DATE,
       },
-      departurePlaceId: {
+      departurePlace: {
         allowNull: false,
         type: Sequelize.BIGINT,
+        references: { model: "Places", key: "id" },
       },
       status: {
         defaultValue: "0",
         allowNull: false,
-        type: Sequelize.ENUM("0", "1", "2", "3"),
+        type: Sequelize.ENUM("0", "1"),
+        /**
+         * 0 [note: 'processing']
+          1 [note: 'finished'] 
+         */
       },
       departurePlaceLat: {
         defaultValue: 0,
@@ -36,14 +42,6 @@ module.exports = {
         defaultValue: 0,
         allowNull: false,
         type: Sequelize.FLOAT,
-      },
-      createdAt: {
-        allowNull: false,
-        type: Sequelize.DATE,
-      },
-      updatedAt: {
-        allowNull: false,
-        type: Sequelize.DATE,
       },
     });
   },

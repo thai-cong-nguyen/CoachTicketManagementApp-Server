@@ -12,14 +12,17 @@ module.exports = {
       scheduleId: {
         allowNull: false,
         type: Sequelize.BIGINT,
+        references: { model: "Schedules", key: "id" },
       },
       passengerId: {
         allowNull: false,
         type: Sequelize.BIGINT,
+        references: { model: "Staffs", key: "id" },
       },
       userId: {
         allowNull: false,
         type: Sequelize.BIGINT,
+        references: { model: "UserAccounts", key: "id" },
       },
       reservationPhoneNumber: {
         allowNull: true,
@@ -39,10 +42,12 @@ module.exports = {
       paymentId: {
         allowNull: false,
         type: Sequelize.BIGINT,
+        references: { model: "Payments", key: "id" },
       },
       discountId: {
         allowNull: false,
         type: Sequelize.BIGINT,
+        references: { model: "Discounts", key: "id" },
       },
       note: {
         defaultValue: null,
@@ -51,15 +56,24 @@ module.exports = {
       status: {
         defaultValue: "0",
         allowNull: false,
-        type: Sequelize.ENUM("0", "1", "2"),
+        type: Sequelize.ENUM("0", "1", "2", "3", "4"),
+        /**
+         *   0 [note: 'processing']
+              1 [note: 'confirmed']
+              2 [note: 'cancel']
+              3 [note: 'uncheck']
+              4 [note: 'checked']
+         */
       },
       departurePoint: {
         allowNull: false,
         type: Sequelize.BIGINT,
+        references: { model: "Places", key: "id" },
       },
       arrivalPoint: {
         allowNull: false,
         type: Sequelize.BIGINT,
+        references: { model: "Places", key: "id" },
       },
       isShuttle: {
         defaultValue: false,
@@ -70,14 +84,6 @@ module.exports = {
         defaultValue: false,
         allowNull: false,
         type: Sequelize.BOOLEAN,
-      },
-      createdAt: {
-        allowNull: false,
-        type: Sequelize.DATE,
-      },
-      updatedAt: {
-        allowNull: false,
-        type: Sequelize.DATE,
       },
     });
   },

@@ -7,6 +7,8 @@ const { getRolesUser } = require("../Services/jwt.service");
 
 const { createJWT } = require("../Services/jwt.service");
 
+const JWT_SECRET_ACCESS_TOKEN = process.env.JWT_SECRET_ACCESS_TOKEN;
+const JWT_SECRET_REFRESH_TOKEN = process.env.JWT_SECRET_REFRESH_TOKEN;
 const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN;
 const salt = bcrypt.genSaltSync(10);
 
@@ -124,13 +126,12 @@ const registerNewUserAccount = async (rawData) => {
 };
 
 const checkPassword = async (inputPassword, hashPassword) => {
-  return await bcrypt.compareSync(inputPassword, hashPassword);
+  return bcrypt.compareSync(inputPassword, hashPassword);
 };
 
 const loginUserAccount = async (rawData) => {
   try {
     const data = rawData.body;
-    console.log(rawData.cookie);
     let username = null;
     let password = null;
     let roleId = null;
@@ -145,31 +146,55 @@ const loginUserAccount = async (rawData) => {
       username = user.userName;
       password = user.password;
       roleId = user.roleId;
-    } else {
+    } else if (data.email || data.phoneNumber) {
       // Check login with email & phoneNumber
       const phoneNumber = data.phoneNumber ? data.phoneNumber : null;
       const email = data.email ? data.email : null;
-      if (
-        !(
-          (await checkEmailExisted(email)) ||
-          (await checkPhoneNumberExisted(phoneNumber))
-        )
-      ) {
+      const passenger = await (email
+        ? await db.Passenger.findOne({
+            where: { email: email },
+            attributes: { exclude: ["createdAt", "updatedAt"] },
+            include: [
+              {
+                model: db.UserAccount,
+                as: "UserAccountData",
+                attributes: { exclude: ["createdAt", "updatedAt"] },
+              },
+            ],
+          })
+        : await db.Passenger.findOne({
+            where: { phoneNumber: phoneNumber },
+            attributes: { exclude: ["createdAt", "updatedAt"] },
+            include: [
+              {
+                model: db.UserAccount,
+                as: "UserAccountData",
+                attributes: { exclude: ["createdAt", "updatedAt"] },
+              },
+            ],
+          }));
+      if (passenger) {
+        username = await passenger.dataValues.UserAccountData.userName;
+        password = await passenger.dataValues.UserAccountData.password;
+        roleId = await passenger.dataValues.UserAccountData.roleId;
+      } else {
         return apiReturns.validation(
           "Email or Phone Number is not already existed"
         );
       }
-      const queryJoin = email
-        ? `SELECT * FROM PASSENGERS  
-        LEFT JOIN USERACCOUNTS ON PASSENGERS.userId=USERACCOUNTS.id
-        WHERE PASSENGERS.email="${email}"`
-        : `SELECT * FROM PASSENGERS 
-        LEFT JOIN USERACCOUNTS ON PASSENGERS.userId=USERACCOUNTS.id
-        WHERE PASSENGERS.phoneNumber="${phoneNumber}"`;
-      const passenger = await db.sequelize.query(queryJoin);
-      username = passenger[0][0].userName;
-      password = passenger[0][0].password;
-      roleId = passenger[0][0].roleId;
+      // const queryJoin = email
+      //   ? `SELECT * FROM PASSENGERS
+      //   LEFT JOIN USERACCOUNTS ON PASSENGERS.userId=USERACCOUNTS.id
+      //   WHERE PASSENGERS.email="${email}"`
+      //   : `SELECT * FROM PASSENGERS
+      //   LEFT JOIN USERACCOUNTS ON PASSENGERS.userId=USERACCOUNTS.id
+      //   WHERE PASSENGERS.phoneNumber="${phoneNumber}"`;
+      // const passenger = await db.sequelize.query(queryJoin);
+      // username = passenger[0][0].userName;
+      // password = passenger[0][0].password;
+      // roleId = passenger[0][0].roleId;
+    } else {
+      return apiReturns.validation("Something went wrong");
     }
     const plainTextPassword = data.password;
     const isPassword = await checkPassword(plainTextPassword, password);
@@ -181,9 +206,21 @@ const loginUserAccount = async (rawData) => {
       username: username,
       role: roleUser.dataValues,
     };
-    return apiReturns.success(200, "Login Successfully", {
-      access_token: `Bearer ${createJWT(payload)}`,
-    });
+    return {
+      response: apiReturns.success(200, "Login Successfully", {
+        ...payload,
+        access_token: `${createJWT(
+          payload,
+          JWT_SECRET_ACCESS_TOKEN,
+          JWT_EXPIRES_IN
+        )}`,
+      }),
+      refresh_token: `${createJWT(
+        payload,
+        JWT_SECRET_REFRESH_TOKEN,
+        JWT_EXPIRES_IN
+      )}`,
+    };
   } catch (error) {
     console.log(error.message);
     return apiReturns.error(400, error.message);

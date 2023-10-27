@@ -12,6 +12,7 @@ module.exports = {
       idRoute: {
         allowNull: false,
         type: Sequelize.BIGINT,
+        references: { model: "Routes", key: "id" },
       },
       placeName: {
         allowNull: false,
@@ -20,6 +21,10 @@ module.exports = {
       isPickUpPlace: {
         defaultValue: "0",
         type: Sequelize.ENUM("0", "1"),
+        /**
+         * 0 [note: 'drop off']
+            1 [note: 'pick up']
+         */
       },
       placeLat: {
         allowNull: true,
@@ -30,14 +35,6 @@ module.exports = {
         allowNull: true,
         defaultValue: null,
         type: Sequelize.STRING,
-      },
-      createdAt: {
-        allowNull: false,
-        type: Sequelize.DATE,
-      },
-      updatedAt: {
-        allowNull: false,
-        type: Sequelize.DATE,
       },
     });
   },

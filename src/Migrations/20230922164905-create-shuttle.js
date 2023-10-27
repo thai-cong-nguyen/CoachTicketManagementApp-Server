@@ -12,26 +12,32 @@ module.exports = {
       coachId: {
         allowNull: false,
         type: Sequelize.BIGINT,
+        references: { model: "Coaches", key: "id" },
       },
       scheduleId: {
         allowNull: false,
         type: Sequelize.BIGINT,
+        references: { model: "Schedules", key: "id" },
       },
       driverId: {
         allowNull: false,
         type: Sequelize.BIGINT,
+        references: { model: "Staffs", key: "id" },
       },
       coachAssistantId: {
         allowNull: false,
         type: Sequelize.BIGINT,
+        references: { model: "Staffs", key: "id" },
       },
-      departurePlaceId: {
+      departurePlace: {
         allowNull: false,
         type: Sequelize.BIGINT,
+        references: { model: "Places", key: "id" },
       },
-      arrivalPlaceId: {
+      arrivalPlace: {
         allowNull: false,
         type: Sequelize.BIGINT,
+        references: { model: "Places", key: "id" },
       },
       distance: {
         defaultValue: 0,
@@ -50,6 +56,12 @@ module.exports = {
         defaultValue: "0",
         allowNull: false,
         type: Sequelize.ENUM("0", "1", "2", "3"),
+        /**
+         *   0 [note: 'sell ticket']
+              1 [note: 'full']
+              2 [note: 'processing']
+              3 [note: 'finished']
+         */
       },
       departurePlaceLat: {
         defaultValue: 0,
@@ -70,14 +82,6 @@ module.exports = {
         defaultValue: 0,
         allowNull: false,
         type: Sequelize.FLOAT,
-      },
-      createdAt: {
-        allowNull: false,
-        type: Sequelize.DATE,
-      },
-      updatedAt: {
-        allowNull: false,
-        type: Sequelize.DATE,
       },
     });
   },

@@ -13,6 +13,9 @@ module.exports = {
       {
         positionName: "Coach Assistant",
       },
+      {
+        positionName: "Manager",
+      },
     ]);
   },
 

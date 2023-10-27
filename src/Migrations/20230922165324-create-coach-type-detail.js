@@ -12,14 +12,7 @@ module.exports = {
       idTypeDetail: {
         allowNull: false,
         type: Sequelize.BIGINT,
-      },
-      createdAt: {
-        allowNull: false,
-        type: Sequelize.DATE,
-      },
-      updatedAt: {
-        allowNull: false,
-        type: Sequelize.DATE,
+        references: { model: "TypeDetails", key: "id" },
       },
     });
   },

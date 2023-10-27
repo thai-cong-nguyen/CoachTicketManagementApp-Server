@@ -25,17 +25,10 @@ module.exports = {
       userId: {
         allowNull: false,
         type: Sequelize.BIGINT,
+        references: { model: "UserAccounts", key: "id" },
       },
       gender: {
         type: Sequelize.ENUM("male", "female"),
-      },
-      createdAt: {
-        allowNull: false,
-        type: Sequelize.DATE,
-      },
-      updatedAt: {
-        allowNull: false,
-        type: Sequelize.DATE,
       },
     });
   },

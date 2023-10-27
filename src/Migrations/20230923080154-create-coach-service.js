@@ -12,18 +12,12 @@ module.exports = {
       coachId: {
         allowNull: false,
         type: Sequelize.BIGINT,
+        references: { model: "Coaches", key: "id" },
       },
       serviceId: {
         allowNull: false,
         type: Sequelize.BIGINT,
-      },
-      createdAt: {
-        allowNull: false,
-        type: Sequelize.DATE,
-      },
-      updatedAt: {
-        allowNull: false,
-        type: Sequelize.DATE,
+        references: { model: "Services", key: "id" },
       },
     });
   },

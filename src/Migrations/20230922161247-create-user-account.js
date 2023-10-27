@@ -25,24 +25,18 @@ module.exports = {
         allowNull: false,
         defaultValue: "1",
         type: Sequelize.BIGINT,
+        references: { model: "Roles", key: "id" },
       },
       memberShipId: {
         allowNull: false,
         defaultValue: "1",
         type: Sequelize.BIGINT,
+        references: { model: "MemberShips", key: "id" },
       },
       rewardPoint: {
         allowNull: false,
         defaultValue: 0,
         type: Sequelize.INTEGER,
-      },
-      createdAt: {
-        allowNull: false,
-        type: Sequelize.DATE,
-      },
-      updatedAt: {
-        allowNull: false,
-        type: Sequelize.DATE,
       },
     });
   },

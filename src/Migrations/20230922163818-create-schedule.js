@@ -12,20 +12,24 @@ module.exports = {
       coachId: {
         allowNull: false,
         type: Sequelize.BIGINT,
+        references: { model: "Coaches", key: "id" },
       },
       routeId: {
         allowNull: false,
         type: Sequelize.BIGINT,
+        references: { model: "Routes", key: "id" },
       },
       driverId: {
         allowNull: true,
         defaultValue: null,
         type: Sequelize.BIGINT,
+        references: { model: "Staffs", key: "id" },
       },
       coachAssistantId: {
         allowNull: true,
         defaultValue: null,
         type: Sequelize.BIGINT,
+        references: { model: "Staffs", key: "id" },
       },
       departureTime: {
         allowNull: true,
@@ -40,10 +44,12 @@ module.exports = {
       startPlace: {
         allowNull: false,
         type: Sequelize.BIGINT,
+        references: { model: "Places", key: "id" },
       },
       arrivalPlace: {
         allowNull: false,
         type: Sequelize.BIGINT,
+        references: { model: "Places", key: "id" },
       },
       price: {
         comment: "Can not be negative",
@@ -55,14 +61,12 @@ module.exports = {
         allowNull: false,
         defaultValue: "0",
         type: Sequelize.ENUM("0", "1", "2", "3"),
-      },
-      createdAt: {
-        allowNull: false,
-        type: Sequelize.DATE,
-      },
-      updatedAt: {
-        allowNull: false,
-        type: Sequelize.DATE,
+        /**
+          0 [note: 'created']
+          1 [note: 'full']
+          2 [note: 'processing']
+          3 [note: 'finished']
+         **/
       },
     });
   },

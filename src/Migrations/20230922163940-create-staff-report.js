@@ -12,14 +12,17 @@ module.exports = {
       staffId: {
         allowNull: false,
         type: Sequelize.BIGINT,
+        references: { model: "Staffs", key: "id" },
       },
       scheduleId: {
         allowNull: false,
         type: Sequelize.BIGINT,
+        references: { model: "Schedules", key: "id" },
       },
       userId: {
         allowNull: false,
         type: Sequelize.BIGINT,
+        references: { model: "UserAccounts", key: "id" },
       },
       createdDate: {
         defaultValue: Sequelize.NOW,
@@ -30,14 +33,6 @@ module.exports = {
         allowNull: true,
         defaultValue: null,
         type: Sequelize.STRING,
-      },
-      createdAt: {
-        allowNull: false,
-        type: Sequelize.DATE,
-      },
-      updatedAt: {
-        allowNull: false,
-        type: Sequelize.DATE,
       },
     });
   },

@@ -19,6 +19,7 @@ module.exports = {
       idCoachType: {
         allowNull: false,
         type: Sequelize.BIGINT,
+        references: { model: "CoachTypes", key: "id" },
       },
       capacity: {
         allowNull: false,
@@ -36,14 +37,6 @@ module.exports = {
       lng: {
         defaultValue: 0,
         type: Sequelize.FLOAT,
-      },
-      createdAt: {
-        allowNull: false,
-        type: Sequelize.DATE,
-      },
-      updatedAt: {
-        allowNull: false,
-        type: Sequelize.DATE,
       },
     });
   },

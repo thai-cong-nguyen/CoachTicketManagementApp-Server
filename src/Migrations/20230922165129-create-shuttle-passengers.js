@@ -12,23 +12,21 @@ module.exports = {
       shuttleRouteId: {
         allowNull: false,
         type: Sequelize.BIGINT,
+        references: { model: "ShuttleRoutes", key: "id" },
       },
       reservationId: {
         allowNull: false,
         type: Sequelize.BIGINT,
+        references: { model: "Reservations", key: "id" },
       },
       status: {
         defaultValue: "0",
         allowNull: false,
         type: Sequelize.ENUM("0", "1"),
-      },
-      createdAt: {
-        allowNull: false,
-        type: Sequelize.DATE,
-      },
-      updatedAt: {
-        allowNull: false,
-        type: Sequelize.DATE,
+        /** 
+         *   0 [note: 'unchecked']
+              1 [note: 'checked'] 
+         */
       },
     });
   },

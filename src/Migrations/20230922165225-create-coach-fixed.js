@@ -12,6 +12,7 @@ module.exports = {
       idCoach: {
         allowNull: false,
         type: Sequelize.BIGINT,
+        references: { model: "Coaches", key: "id" },
       },
       serviceName: {
         allowNull: false,
@@ -31,14 +32,6 @@ module.exports = {
         defaultValue: false,
         allowNull: false,
         type: Sequelize.BOOLEAN,
-      },
-      createdAt: {
-        allowNull: false,
-        type: Sequelize.DATE,
-      },
-      updatedAt: {
-        allowNull: false,
-        type: Sequelize.DATE,
       },
     });
   },
