@@ -4,7 +4,7 @@ const { hashPassword } = require("../Services/auth.service");
 module.exports = {
   async up(queryInterface, Sequelize) {
     return queryInterface.bulkInsert("UserAccounts", [
-      { userName: "admin", password: hashPassword("12345"), roleId: "3" },
+      { userName: "admin", password: await hashPassword("12345"), roleId: 3 },
     ]);
   },
 

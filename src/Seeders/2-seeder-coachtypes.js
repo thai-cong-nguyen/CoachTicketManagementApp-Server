@@ -3,8 +3,8 @@
 module.exports = {
   async up(queryInterface, Sequelize) {
     return queryInterface.bulkInsert("CoachTypes", [
-      { CoachTypes: "normal" },
-      { CoachTypes: "Limousine" },
+      { typeName: "normal" },
+      { typeName: "Limousine" },
     ]);
   },
 
