@@ -14,38 +14,31 @@ const getAllShuttle = async ({ page, limit, order, ...query }) => {
     if (order) queries.order = order;
     const shuttles = await db.Shuttle.findAndCountAll({
       where: query,
-      attributes: { exclude: ["createdAt", "updatedAt"] },
       ...queries,
       include: [
         {
           model: db.Coach,
           as: "CoachData",
-          attributes: { exclude: ["createdAt", "updatedAt"] },
         },
         {
           model: db.Schedule,
           as: "ScheduleData",
-          attributes: { exclude: ["createdAt", "updatedAt"] },
         },
         {
           model: db.Staff,
           as: "DriverData",
-          attributes: { exclude: ["createdAt", "updatedAt"] },
         },
         {
           model: db.Staff,
           as: "CoachAssistantData",
-          attributes: { exclude: ["createdAt", "updatedAt"] },
         },
         {
           model: db.Places,
           as: "DeparturePlaceData",
-          attributes: { exclude: ["createdAt", "updatedAt"] },
         },
         {
           model: db.Places,
           as: "ArrivalPlaceData",
-          attributes: { exclude: ["createdAt", "updatedAt"] },
         },
       ],
     });

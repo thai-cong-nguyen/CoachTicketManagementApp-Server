@@ -35,7 +35,7 @@ const getAllCoachTypes = async ({ page, limit, order, ...query }) => {
     if (order) queries.order = order;
     const coachTypes = await db.CoachType.findAndCountAll({
       where: query,
-      attributes: { exclude: ["createdAt", "updatedAt", "password"] },
+      attributes: { exclude: ["password"] },
       ...queries,
     });
     return apiReturns.success(200, "Get CoachTypes Successful", coachTypes);

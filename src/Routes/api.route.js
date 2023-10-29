@@ -12,6 +12,7 @@ const discountRouter = require("./discounts.route");
 const userDiscountRouter = require("./userDiscounts.route");
 const staffReportRouter = require("./staffReports.route");
 const paymentRouter = require("./payment.route");
+const statisticRouter = require("./statistics.route");
 const uploadRouter = require("./upload.route");
 
 const {
@@ -49,6 +50,8 @@ const apiWebRoutes = (app) => {
   app.use("/api/staffReports", staffReportRouter);
   // Payment Router
   app.use("/api/payment-sheet", paymentRouter);
+  // Statistic Router
+  app.use("/api/statistic", statisticRouter);
   // Upload Image Router
   app.use("/api/upload", uploadRouter);
 

@@ -14,7 +14,7 @@ const getAllStaffs = async ({ page, limit, order, ...query }) => {
     if (order) queries.order = order;
     const staff = await db.Staff.findAndCountAll({
       where: queries,
-      attributes: { exclude: ["createdAt", "updatedAt", "password"] },
+      attributes: { exclude: ["password"] },
       ...queries,
     });
   } catch (error) {

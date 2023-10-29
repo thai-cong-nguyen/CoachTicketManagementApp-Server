@@ -57,6 +57,8 @@ module.exports = (sequelize, DataTypes) => {
     {
       sequelize,
       modelName: "Schedule",
+      createdAt: false,
+      updatedAt: false,
     }
   );
   return Schedule;

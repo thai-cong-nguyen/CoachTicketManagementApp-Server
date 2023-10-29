@@ -27,6 +27,8 @@ module.exports = (sequelize, DataTypes) => {
     {
       sequelize,
       modelName: "CoachFixed",
+      createdAt: false,
+      updatedAt: false,
     }
   );
   return CoachFixed;

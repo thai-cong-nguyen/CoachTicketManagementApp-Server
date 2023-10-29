@@ -57,7 +57,7 @@ module.exports = (sequelize, DataTypes) => {
       paymentId: DataTypes.BIGINT,
       discountId: DataTypes.BIGINT,
       note: DataTypes.STRING,
-      status: DataTypes.ENUM("0", "1", "2"),
+      status: DataTypes.ENUM("0", "1", "2", "3", "4"),
       departurePoint: DataTypes.BIGINT,
       arrivalPoint: DataTypes.BIGINT,
       isShuttle: DataTypes.BOOLEAN,
@@ -66,6 +66,8 @@ module.exports = (sequelize, DataTypes) => {
     {
       sequelize,
       modelName: "Reservation",
+      createdAt: false,
+      updatedAt: false,
     }
   );
   return Reservation;

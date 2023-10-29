@@ -1,11 +1,14 @@
 require("dotenv").config({ path: "../../.env" });
+const { Op } = require("sequelize");
+const db = require("../Models/index");
 const KEY_STRIPE = process.env.KEY_STRIPE;
 const stripe = require("stripe")(KEY_STRIPE);
 const apiReturns = require("../Helpers/apiReturns.helper");
 
 const paymentGateway = async (rawData) => {
   try {
-    const data = rawData.body;
+    const { discountId, userId, ...data } = rawData.body;
+
     // Use an existing Customer ID if this is a returning customer.
     const ephemeralKey = await stripe.ephemeralKeys.create(
       { customer: "cus_OjlFGeYC9TMFbu" },
@@ -21,6 +24,18 @@ const paymentGateway = async (rawData) => {
         enabled: true,
       },
     });
+    if (discountId && userId) {
+      const discount = await db.UserDiscount.findOne({
+        where: { userId: userId, discountId: discountId, status: "0" },
+      });
+      if (!discount) {
+        return apiReturns.error(404, "Discount is not available");
+      }
+      await db.UserDiscount.update(
+        { status: "1" },
+        { where: { userId: userId, discountId: discountId } }
+      );
+    }
 
     return apiReturn.success(200, "Payment Successfully", {
       paymentIntent: paymentIntent.client_secret,

@@ -15,7 +15,6 @@ const getAllFromPlaces = async ({ page, limit, order, ...query }) => {
     query.isPickUpPlace = "1";
     const places = await db.Places.findAndCountAll({
       where: query,
-      attributes: { exclude: ["createdAt", "updatedAt"] },
       ...queries,
     });
     return apiReturns.success(200, "Get Successfully", places);
@@ -36,7 +35,6 @@ const getAllToPlaces = async ({ page, limit, order, ...query }) => {
     query.isPickUpPlace = "0";
     const places = await db.Places.findAndCountAll({
       where: query,
-      attributes: { exclude: ["createdAt", "updatedAt"] },
       ...queries,
     });
     return apiReturns.success(200, "Get Successfully", places);
@@ -56,7 +54,6 @@ const getPlaceWithQuery = async ({ page, limit, order, ...query }) => {
     if (order) queries.order = order;
     const res = await db.Places.findAndCountAll({
       where: query,
-      attributes: { exclude: ["createdAt", "updatedAt"] },
       ...queries,
     });
     return apiReturns.success(200, "Get Successfully", res);

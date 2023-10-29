@@ -12,12 +12,11 @@ const getAllSchedules = async ({ page, limit, order, ...query }) => {
     queries.offset = offset * flimit;
     queries.limit = flimit;
     if (order) queries.order = order;
-    const schedule = await db.Schedule.findAndCountAll({
+    const schedules = await db.Schedule.findAndCountAll({
       where: query,
-      attributes: { exclude: ["createdAt", "updatedAt"] },
       ...queries,
     });
-    return apiReturns.success(200, "Get Schedules Successfully", schedule[0]);
+    return apiReturns.success(200, "Get Schedules Successfully", schedules);
   } catch (error) {
     console.log(error.message);
     return apiReturns.error(400, error.message);

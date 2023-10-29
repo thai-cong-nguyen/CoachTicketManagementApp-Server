@@ -14,25 +14,21 @@ const getAllTrips = async ({ page, limit, order, ...query }) => {
     if (order) queries.order = order;
     const trips = await db.Schedule.findAndCountAll({
       where: query,
-      attributes: { exclude: ["createdAt", "updatedAt"] },
       ...queries,
       include: [
         {
           model: db.Coach,
           as: "CoachData",
-          attributes: { exclude: ["createdAt", "updatedAt"] },
           include: [
             {
               model: db.CoachType,
               as: "CoachTypeData",
-              attributes: { exclude: ["createdAt", "updatedAt"] },
             },
           ],
         },
         {
           model: db.Route,
           as: "RouteData",
-          attributes: { exclude: ["createdAt", "updatedAt"] },
         },
         {
           model: db.Staff,
@@ -47,12 +43,10 @@ const getAllTrips = async ({ page, limit, order, ...query }) => {
         {
           model: db.Places,
           as: "StartPlaceData",
-          attributes: { exclude: ["createdAt", "updatedAt"] },
         },
         {
           model: db.Places,
           as: "ArrivalPlaceData",
-          attributes: { exclude: ["createdAt", "updatedAt"] },
         },
       ],
     });
@@ -67,11 +61,6 @@ const getAllTrips = async ({ page, limit, order, ...query }) => {
         const capacity = data.CoachData.capacity;
         const remainingSlot =
           reservations.count <= capacity ? capacity - reservations.count : 0;
-        // let seats = [];
-        // reservations.rows.map(async (reservation) => {
-        //   seats.push(reservation.seatNumber);
-        // });
-        // data.seats = seats;
         data.remainingSlot = remainingSlot;
       })
     );

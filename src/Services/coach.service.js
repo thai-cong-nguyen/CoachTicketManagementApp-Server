@@ -6,9 +6,30 @@ const apiReturns = require("../Helpers/apiReturns.helper");
 
 const createNewCoach = async (rawData) => {
   try {
-    const data = rawData.body;
-    await db.Coach.create(data);
-    return apiReturns.success(200, "Create new Coach Successful");
+    const { services, typeDetails, ...data } = rawData.body;
+    const coach = await db.Coach.create(data);
+
+    if (data.services) {
+      await Promise.all(
+        data.services.map(async (service) => {
+          await db.CoachService.create({
+            coachId: coach.id,
+            serviceId: service,
+          });
+        })
+      );
+    }
+    // if (data.typeDetails) {
+    //   await Promise.all(
+    //     data.typeDetails.map(async (typeDetail) => {
+    //       await db.CoachTypeDetails.create({
+    //         coachId: coach.id,
+    //         serviceId: service,
+    //       });
+    //     })
+    //   );
+    // }
+    return apiReturns.success(200, "Create new Coach Successful", coach);
   } catch (error) {
     console.error(error.message);
     return apiReturns.error(400, error.message);
@@ -26,7 +47,6 @@ const getAllCoaches = async ({ page, limit, order, ...query }) => {
     if (order) queries.order = [order];
     const coaches = await db.Coach.findAndCountAll({
       where: query,
-      attributes: { exclude: ["createdAt", "updatedAt"] },
       ...queries,
     });
     return apiReturns.success(200, "Get Coaches Successfully", coaches);

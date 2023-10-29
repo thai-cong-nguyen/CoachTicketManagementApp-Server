@@ -7,31 +7,25 @@ const apiReturns = require("../Helpers/apiReturns.helper");
 const getTicket = async ({ queries, ...query }) => {
   const reservations = await db.Reservation.findAndCountAll({
     where: query,
-    attributes: {
-      exclude: ["passengerId", "createdAt", "updatedAt"],
-    },
+    ...queries,
     include: [
       {
         model: db.Schedule,
         as: "ScheduleData",
-        attributes: { exclude: ["createdAt", "updatedAt"] },
         include: [
           {
             model: db.Coach,
             as: "CoachData",
-            attributes: { exclude: ["createdAt", "updatedAt"] },
             include: [
               {
                 model: db.CoachType,
                 as: "CoachTypeData",
-                attributes: { exclude: ["createdAt", "updatedAt"] },
               },
             ],
           },
           {
             model: db.Route,
             as: "RouteData",
-            attributes: { exclude: ["createdAt", "updatedAt"] },
           },
           {
             model: db.Staff,
@@ -46,12 +40,10 @@ const getTicket = async ({ queries, ...query }) => {
           {
             model: db.Places,
             as: "StartPlaceData",
-            attributes: { exclude: ["createdAt", "updatedAt"] },
           },
           {
             model: db.Places,
             as: "ArrivalPlaceData",
-            attributes: { exclude: ["createdAt", "updatedAt"] },
           },
         ],
       },
@@ -122,7 +114,24 @@ const getAllTickets = async ({ page, limit, order, ...query }) => {
   }
 };
 
-const getAllTicketsOfUsers = async (rawData) => {};
+const getAllTicketsOfUsers = async ({ page, limit, order, userId }) => {
+  try {
+    const queries = { raw: true, nest: true };
+    const offset = !page || +page <= 1 ? 0 : +page - 1;
+    const flimit = +limit || +process.env.PAGINATION_LIMIT;
+    queries.offset = offset * flimit;
+    queries.limit = flimit;
+    if (order) queries.order = order;
+    queries.userId = userId;
+    const currentTickets = await getTickets({ queries, status: "3" });
+    const historyTickets = await getTickets({ queries, [Op.notIn]: ["3"] });
+    const res = { current: currentTickets, history: historyTickets };
+    return apiReturns.success(200, "Get Successfully", res);
+  } catch (error) {
+    console.error(error.message);
+    return apiReturns.error(400, error.message);
+  }
+};
 
 const fillTicketInfo = async (rawData) => {
   try {
@@ -132,7 +141,6 @@ const fillTicketInfo = async (rawData) => {
       data.forEach(async (e) => {
         const passenger = await db.Passenger.findOrCreate({
           where: { phoneNumber: e.phoneNumber },
-          attributes: { exclude: ["createdAt", "updatedAt"] },
           default: e.passenger,
         });
         const reservation = await db.Reservation.update(
@@ -207,4 +215,5 @@ module.exports = {
   fillTicketInfo,
   chooseSeatTicket,
   changeSeatTicket,
+  getAllTicketsOfUsers,
 };

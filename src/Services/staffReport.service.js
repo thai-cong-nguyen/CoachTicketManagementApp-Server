@@ -14,7 +14,6 @@ const getAllStaffReports = async ({ page, limit, order, ...query }) => {
     if (order) queries.order = order;
     const staffReports = await db.StaffReport.findAndCountAll({
       where: query,
-      attributes: { exclude: ["createdAt", "updatedAt"] },
       ...queries,
     });
     return apiReturns.success(200, "Get Successfully", staffReports);

@@ -9,7 +9,8 @@ const { createJWT } = require("../Services/jwt.service");
 
 const JWT_SECRET_ACCESS_TOKEN = process.env.JWT_SECRET_ACCESS_TOKEN;
 const JWT_SECRET_REFRESH_TOKEN = process.env.JWT_SECRET_REFRESH_TOKEN;
-const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN;
+const JWT_EXPIRES_IN_ACCESS_TOKEN = process.env.JWT_EXPIRES_IN_ACCESS_TOKEN;
+const JWT_EXPIRES_IN_REFRESH_TOKEN = process.env.JWT_EXPIRES_IN_REFRESH_TOKEN;
 const salt = bcrypt.genSaltSync(10);
 
 const defaultAvatar =
@@ -66,7 +67,6 @@ const registerNewUserAccount = async (rawData) => {
     }
     const email = data.email ? data.email : null;
     const phoneNumber = data.phoneNumber ? data.phoneNumber : null;
-    const positionId = data.positionId ? data.positionId : "1";
     if (email && (await checkEmailExisted(email))) {
       console.log(email, await checkEmailExisted(email));
       return apiReturns.validation("Email or Phone Number is already existed");
@@ -100,6 +100,7 @@ const registerNewUserAccount = async (rawData) => {
             { transaction: t }
           );
         } else if (roleId == "2") {
+          const positionId = data.positionId ? data.positionId : "1";
           const staff = await db.Staff.create(
             {
               fullName: data.userName,
@@ -129,7 +130,7 @@ const checkPassword = async (inputPassword, hashPassword) => {
   return bcrypt.compareSync(inputPassword, hashPassword);
 };
 
-const loginUserAccount = async (rawData) => {
+const loginUserAccount = async (rawData, res) => {
   try {
     const data = rawData.body;
     let username = null;
@@ -153,23 +154,19 @@ const loginUserAccount = async (rawData) => {
       const passenger = await (email
         ? await db.Passenger.findOne({
             where: { email: email },
-            attributes: { exclude: ["createdAt", "updatedAt"] },
             include: [
               {
                 model: db.UserAccount,
                 as: "UserAccountData",
-                attributes: { exclude: ["createdAt", "updatedAt"] },
               },
             ],
           })
         : await db.Passenger.findOne({
             where: { phoneNumber: phoneNumber },
-            attributes: { exclude: ["createdAt", "updatedAt"] },
             include: [
               {
                 model: db.UserAccount,
                 as: "UserAccountData",
-                attributes: { exclude: ["createdAt", "updatedAt"] },
               },
             ],
           }));
@@ -182,17 +179,6 @@ const loginUserAccount = async (rawData) => {
           "Email or Phone Number is not already existed"
         );
       }
-      // const queryJoin = email
-      //   ? `SELECT * FROM PASSENGERS
-      //   LEFT JOIN USERACCOUNTS ON PASSENGERS.userId=USERACCOUNTS.id
-      //   WHERE PASSENGERS.email="${email}"`
-      //   : `SELECT * FROM PASSENGERS
-      //   LEFT JOIN USERACCOUNTS ON PASSENGERS.userId=USERACCOUNTS.id
-      //   WHERE PASSENGERS.phoneNumber="${phoneNumber}"`;
-      // const passenger = await db.sequelize.query(queryJoin);
-      // username = passenger[0][0].userName;
-      // password = passenger[0][0].password;
-      // roleId = passenger[0][0].roleId;
     } else {
       return apiReturns.validation("Something went wrong");
     }
@@ -206,29 +192,71 @@ const loginUserAccount = async (rawData) => {
       username: username,
       role: roleUser.dataValues,
     };
-    return {
-      response: apiReturns.success(200, "Login Successfully", {
-        ...payload,
-        access_token: `${createJWT(
-          payload,
-          JWT_SECRET_ACCESS_TOKEN,
-          JWT_EXPIRES_IN
-        )}`,
-      }),
-      refresh_token: `${createJWT(
+    res.cookie(
+      "RefreshToken",
+      createJWT(
         payload,
         JWT_SECRET_REFRESH_TOKEN,
-        JWT_EXPIRES_IN
+        JWT_EXPIRES_IN_REFRESH_TOKEN
+      ),
+      {
+        httpOnly: true,
+        maxAge: 60 * 1000,
+        sameSite: "strict",
+      }
+    );
+    return apiReturns.success(200, "Login Successfully", {
+      ...payload,
+      access_token: `${createJWT(
+        payload,
+        JWT_SECRET_ACCESS_TOKEN,
+        JWT_EXPIRES_IN_ACCESS_TOKEN
       )}`,
-    };
+    });
+  } catch (error) {
+    console.log(error);
+    return apiReturns.error(400, error.message);
+  }
+};
+
+const requestRefreshToken = async (rawData, res) => {
+  try {
+    const refreshToken = rawData.cookies.RefreshToken;
+    if (!refreshToken) return apiReturns.error(401, "You're not authenticated");
+    jwt.verify(refreshToken, JWT_SECRET_REFRESH_TOKEN, (error, decoded) => {
+      if (error) {
+        return notAuthError("Access token maybe expired or invalid", res);
+      }
+      const newAccessToken = createJWT(
+        decoded,
+        JWT_SECRET_ACCESS_TOKEN,
+        JWT_EXPIRES_IN_ACCESS_TOKEN
+      );
+      const newRefreshToken = createJWT(
+        decoded,
+        JWT_SECRET_REFRESH_TOKEN,
+        JWT_EXPIRES_IN_REFRESH_TOKEN
+      );
+      res.cookie("RefreshToken", newRefreshToken, {
+        httpOnly: true,
+        maxAge: 60 * 1000,
+        sameSite: "strict",
+      });
+      return apiReturns.success(200, "Refresh Token Successfully", {
+        accessToken: newAccessToken,
+      });
+    });
   } catch (error) {
     console.log(error.message);
     return apiReturns.error(400, error.message);
   }
 };
 
+// const logoutAccount = async();
+
 module.exports = {
   hashPassword,
   registerNewUserAccount,
   loginUserAccount,
+  requestRefreshToken,
 };

@@ -26,6 +26,8 @@ module.exports = (sequelize, DataTypes) => {
     {
       sequelize,
       modelName: "Route",
+      createdAt: false,
+      updatedAt: false,
     }
   );
   return Route;

@@ -28,6 +28,8 @@ module.exports = (sequelize, DataTypes) => {
     {
       sequelize,
       modelName: "Passenger",
+      createdAt: false,
+      updatedAt: false,
     }
   );
   return Passenger;

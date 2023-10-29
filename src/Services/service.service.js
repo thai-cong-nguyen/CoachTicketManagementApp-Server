@@ -28,7 +28,6 @@ const getAllServices = async ({ page, limit, order, ...query }) => {
     if (order) queries.order = [order];
     const services = await db.Service.findAndCountAll({
       where: query,
-      attributes: { exclude: ["createdAt", "updatedAt"] },
       ...queries,
     });
     return apiReturns.success(200, "Get Successfully", services);

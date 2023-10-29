@@ -14,18 +14,15 @@ const getAllShuttleRoutes = async ({ page, limit, order, ...query }) => {
     if (order) queries.order = order;
     const shuttleRoutes = await db.ShuttleRoute.findAndCountAll({
       where: query,
-      attributes: { exclude: ["createdAt", "updatedAt"] },
       ...queries,
       include: [
         {
           model: db.Shuttle,
           as: "ShuttleData",
-          attributes: { exclude: ["createdAt", "updatedAt"] },
         },
         {
           model: db.Places,
           as: "DeparturePlaceData",
-          attributes: { exclude: ["createdAt", "updatedAt"] },
         },
       ],
     });

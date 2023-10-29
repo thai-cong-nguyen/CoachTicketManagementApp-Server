@@ -61,6 +61,8 @@ module.exports = (sequelize, DataTypes) => {
     {
       sequelize,
       modelName: "Shuttle",
+      createdAt: false,
+      updatedAt: false,
     }
   );
   return Shuttle;

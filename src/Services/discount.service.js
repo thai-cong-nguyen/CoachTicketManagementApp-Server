@@ -21,7 +21,6 @@ const getAllDiscounts = async ({
     if (discountId) queries.discountId = discountId;
     const discounts = await db.Discount.findAndCountAll({
       where: query,
-      attributes: { exclude: ["createdAt", "updatedAt"] },
       ...queries,
     });
     return apiReturns.success(200, "Get Successfully", discounts);

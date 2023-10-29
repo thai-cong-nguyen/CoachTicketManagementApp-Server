@@ -9,7 +9,7 @@ module.exports = {
         primaryKey: true,
         type: Sequelize.BIGINT,
       },
-      idRoute: {
+      routeId: {
         allowNull: false,
         type: Sequelize.BIGINT,
         references: { model: "Routes", key: "id" },

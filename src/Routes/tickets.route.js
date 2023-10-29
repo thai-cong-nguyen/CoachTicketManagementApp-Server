@@ -7,10 +7,12 @@ const {
   fillTicketInfoController,
   chooseSeatTicketController,
   changeSeatTicketController,
+  getAllTicketsOfUsersController,
 } = require("../Controllers/ticket.controller");
 
 router.use(verifyJWT);
 router.get("/", getAllTicketsController);
+router.get("/user", getAllTicketsOfUsersController);
 router.post("/choose-seat", chooseSeatTicketController);
 router.post("/fill-ticket-info", fillTicketInfoController);
 router.patch("/change-seat", changeSeatTicketController);

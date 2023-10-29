@@ -23,12 +23,10 @@ const getUserDiscount = async ({
     if (discountId) queries.discountId = discountId;
     const userDiscount = await db.UserDiscount.findAndCountAll({
       where: query,
-      attributes: { exclude: ["createdAt", "updatedAt"] },
       includes: [
         {
           model: db.Discount,
           as: "DiscountData",
-          attributes: { exclude: ["createdAt", "updatedAt"] },
         },
       ],
       ...queries,
@@ -101,23 +99,6 @@ const deleteUserDiscount = async (rawData) => {
         }
       })
     );
-    // const { userId, discounts } = rawData.body;
-    // const userDiscount = await db.UserAccount.findAndCountAll({
-    //   where: { id: userId },
-    // });
-    // if (userDiscount.count === 0) {
-    //   return apiReturns.validation("User does not have any discount");
-    // }
-    // new Promise.all(
-    //   discounts.forEach(async (discountId) => {
-    //     const checkExisted = await db.UserDiscount.findOne({
-    //       where: { discountId: discountId },
-    //     });
-    //     if (checkExisted) {
-    //       await db.UserDiscount.destroy({ where: { discountId: discountId } });
-    //     }
-    //   })
-    // );
     return apiReturns.success(200, "Delete Discount of User Successfully");
   } catch (error) {
     console.error(error.message);

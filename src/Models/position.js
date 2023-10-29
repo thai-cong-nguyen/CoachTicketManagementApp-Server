@@ -18,6 +18,8 @@ module.exports = (sequelize, DataTypes) => {
     {
       sequelize,
       modelName: "Position",
+      createdAt: false,
+      updatedAt: false,
     }
   );
   return Position;

@@ -18,7 +18,6 @@ const getAllPassengers = async ({ page, limit, order, ...query }) => {
     if (order) queries.order = [order];
     const passengers = await db.Passenger.findAndCountAll({
       where: query,
-      attributes: { exclude: ["createdAt", "updatedAt"] },
       ...queries,
     });
     return apiReturns.success(200, "Get Passengers Successfully", passengers);

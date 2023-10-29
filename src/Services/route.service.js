@@ -14,7 +14,7 @@ const getAllRoutes = async ({ page, limit, order, ...query }) => {
     if (order) queries.order = order;
     const routes = await db.Route.findAndCountAll({
       where: query,
-      attributes: { exclude: ["createdAt", "updatedAt", "password"] },
+      attributes: { exclude: ["password"] },
       ...queries,
     });
     return apiReturns.success(200, "Get Successfully", routes);
