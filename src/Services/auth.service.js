@@ -1,11 +1,11 @@
 require("dotenv").config({ path: "../../.env" });
 const bcrypt = require("bcrypt");
-const { Op } = require("sequelize");
 const db = require("../Models/index");
 const apiReturns = require("../Helpers/apiReturns.helper");
 const { getRolesUser } = require("../Services/jwt.service");
-
 const { createJWT } = require("../Services/jwt.service");
+const { setRedis, getRedis, delRedis } = require("../Services/redis.service");
+const jwt = require("jsonwebtoken");
 
 const JWT_SECRET_ACCESS_TOKEN = process.env.JWT_SECRET_ACCESS_TOKEN;
 const JWT_SECRET_REFRESH_TOKEN = process.env.JWT_SECRET_REFRESH_TOKEN;
@@ -118,7 +118,6 @@ const registerNewUserAccount = async (rawData) => {
     } catch (error) {
       return apiReturns.error(500, error.message);
     }
-
     return apiReturns.success(200, "Register Successfully");
   } catch (error) {
     console.error(error.message);
@@ -189,29 +188,31 @@ const loginUserAccount = async (rawData, res) => {
     }
     const roleUser = await getRolesUser(roleId);
     const payload = {
-      username: username,
+      userName: username,
       role: roleUser.dataValues,
     };
-    res.cookie(
-      "RefreshToken",
-      createJWT(
-        payload,
-        JWT_SECRET_REFRESH_TOKEN,
-        JWT_EXPIRES_IN_REFRESH_TOKEN
-      ),
-      {
-        httpOnly: true,
-        maxAge: 60 * 1000,
-        sameSite: "strict",
-      }
+    const refreshToken = createJWT(
+      payload,
+      JWT_SECRET_REFRESH_TOKEN,
+      JWT_EXPIRES_IN_REFRESH_TOKEN
     );
+    const accessToken = createJWT(
+      payload,
+      JWT_SECRET_ACCESS_TOKEN,
+      JWT_EXPIRES_IN_ACCESS_TOKEN
+    );
+    res.cookie("refreshToken", refreshToken, {
+      httpOnly: true,
+      maxAge: 24 * 60 * 60 * 1000, // Expires after 24 hours
+      sameSite: "strict",
+    });
+    await setRedis({
+      key: username,
+      value: JSON.stringify(refreshToken),
+    });
     return apiReturns.success(200, "Login Successfully", {
       ...payload,
-      access_token: `${createJWT(
-        payload,
-        JWT_SECRET_ACCESS_TOKEN,
-        JWT_EXPIRES_IN_ACCESS_TOKEN
-      )}`,
+      access_token: accessToken,
     });
   } catch (error) {
     console.log(error);
@@ -221,42 +222,69 @@ const loginUserAccount = async (rawData, res) => {
 
 const requestRefreshToken = async (rawData, res) => {
   try {
-    const refreshToken = rawData.cookies.RefreshToken;
-    if (!refreshToken) return apiReturns.error(401, "You're not authenticated");
-    jwt.verify(refreshToken, JWT_SECRET_REFRESH_TOKEN, (error, decoded) => {
-      if (error) {
-        return notAuthError("Access token maybe expired or invalid", res);
+    const { userName } = rawData.body;
+    const refreshTokenInCookie = rawData.cookies.refreshToken;
+    if (!refreshTokenInCookie)
+      return apiReturns.error(401, "You're not authenticated");
+    const refreshTokenInRedis = await getRedis(userName);
+    if (refreshTokenInRedis != refreshTokenInCookie) {
+      return apiReturns.error(403, "Refresh Token is not valid");
+    }
+    let newAccessToken,
+      newRefreshToken = null;
+    return jwt.verify(
+      refreshTokenInCookie,
+      JWT_SECRET_REFRESH_TOKEN,
+      async (error, decoded) => {
+        if (error) {
+          return notAuthError("Access token maybe expired or invalid", res);
+        }
+        const payload = { userName: decoded.userName, role: decoded.role };
+        newAccessToken = createJWT(
+          payload,
+          JWT_SECRET_ACCESS_TOKEN,
+          JWT_EXPIRES_IN_ACCESS_TOKEN
+        );
+        newRefreshToken = createJWT(
+          payload,
+          JWT_SECRET_REFRESH_TOKEN,
+          JWT_EXPIRES_IN_REFRESH_TOKEN
+        );
+        await setRedis({
+          key: userName,
+          value: JSON.stringify(newRefreshToken),
+        });
+        await res.cookie("refreshToken", newRefreshToken, {
+          httpOnly: true,
+          maxAge: 24 * 60 * 60 * 1000, // Expires after 24 hours
+          sameSite: "strict",
+        });
+        return apiReturns.success(200, "Refresh Token Successfully", {
+          accessToken: newAccessToken,
+        });
       }
-      const newAccessToken = createJWT(
-        decoded,
-        JWT_SECRET_ACCESS_TOKEN,
-        JWT_EXPIRES_IN_ACCESS_TOKEN
-      );
-      const newRefreshToken = createJWT(
-        decoded,
-        JWT_SECRET_REFRESH_TOKEN,
-        JWT_EXPIRES_IN_REFRESH_TOKEN
-      );
-      res.cookie("RefreshToken", newRefreshToken, {
-        httpOnly: true,
-        maxAge: 60 * 1000,
-        sameSite: "strict",
-      });
-      return apiReturns.success(200, "Refresh Token Successfully", {
-        accessToken: newAccessToken,
-      });
-    });
+    );
+  } catch (error) {
+    console.log(error);
+    return apiReturns.error(400, error.message);
+  }
+};
+
+const logoutAccount = async (rawData, res) => {
+  try {
+    res.clearCookie("refreshToken");
+    await delRedis(rawData.body.userName);
+    return apiReturns.success(200, "Logged Out!");
   } catch (error) {
     console.log(error.message);
     return apiReturns.error(400, error.message);
   }
 };
 
-// const logoutAccount = async();
-
 module.exports = {
   hashPassword,
   registerNewUserAccount,
   loginUserAccount,
   requestRefreshToken,
+  logoutAccount,
 };

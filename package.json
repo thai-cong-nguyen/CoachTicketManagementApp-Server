@@ -5,7 +5,8 @@
   "main": "server.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "nodemon server.js"
+    "start": "nodemon server.js",
+    "redis": "redis-server"
   },
   "keywords": [],
   "author": "",
@@ -19,12 +20,14 @@
     "firebase": "^10.5.0",
     "firebase-admin": "^11.11.0",
     "http-errors": "^2.0.0",
+    "ioredis": "^5.3.2",
     "jsonwebtoken": "^9.0.2",
     "multer": "^1.4.5-lts.1",
     "mysql2": "^3.6.1",
     "nodemailer": "^6.9.5",
     "nodemon": "^3.0.1",
     "otp-generator": "^4.0.1",
+    "redis": "^4.6.10",
     "sequelize": "^6.33.0",
     "stripe": "^13.9.0",
     "two-step-auth": "^1.1.2",
