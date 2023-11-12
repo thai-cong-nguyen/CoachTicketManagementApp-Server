@@ -1,0 +1,19 @@
+version: "3.8"
+
+services:
+  postgres:
+    container_name: postgres_container
+    image: postgres:16.0-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-12345}
+      PGDATA: /data/postgres
+    volumes:
+      - postgres:/data/postgres
+    ports:
+      - "5436:5432"
+    restart: unless-stopped
+
+volumes:
+  postgres:
+#docker-compose -f postgres.yml -p postgres-16-alpine up --build -d

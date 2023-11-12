@@ -20,6 +20,6 @@ const {
 router.get("/", getUserDiscountController);
 router.post("/", addDiscountForUserController);
 router.patch("/:id", updateUserDiscountController);
-router.delete("/", deleteUserDiscountController);
+router.delete("/:userId", deleteUserDiscountController);
 
 module.exports = router;

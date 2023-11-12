@@ -3,6 +3,10 @@ const bcrypt = require("bcrypt");
 const { Op } = require("sequelize");
 const db = require("../Models/index");
 const apiReturns = require("../Helpers/apiReturns.helper");
+const { deleteReservationById } = require("./reservation.service");
+const { deleteRatingById } = require("./rating.service");
+const { deleteShuttleById } = require("./shuttle.service");
+const { deleteStaffReportById } = require("./staffReport.service");
 
 const getAllSchedules = async ({ page, limit, order, ...query }) => {
   try {
@@ -46,9 +50,39 @@ const updateSchedule = async (rawData) => {
   }
 };
 
+const deleteScheduleById = async (id) => {
+  const [ratings, reservations, shuttles, staffReports] = await Promise.all([
+    db.Rating.findAndCountAll({ where: { scheduleId: id } }),
+    db.Reservation.findAndCountAll({ where: { scheduleId: id } }),
+    db.Shuttle.findAndCountAll({ where: { scheduleId: id } }),
+    db.StaffReport.findAndCountAll({ where: { scheduleId: id } }),
+  ]);
+
+  await Promise.all([
+    ...ratings.rows.map((rating) => deleteRatingById(rating.id)),
+    ...reservations.rows.map((reservation) =>
+      deleteReservationById(reservation.id)
+    ),
+    ...shuttles.rows.map((shuttle) => deleteShuttleById(shuttle.id)),
+    ...staffReports.rows.map((staffReport) =>
+      deleteStaffReportById(staffReport.id)
+    ),
+  ]);
+};
+
 const deleteSchedule = async (rawData) => {
   try {
     const { id } = rawData.params;
+    const reservations = await db.Reservation.findAndCountAll({
+      where: { scheduleId: id },
+    });
+    if (reservations.rows > 0) {
+      await Promise.all(
+        reservations.map(async (reservation) => {
+          await deleteReservation(reservation.id);
+        })
+      );
+    }
     await db.Schedule.destroy({ where: { id: id } });
     return apiReturns.success(200, "Delete Schedule Successfully");
   } catch (error) {
@@ -60,6 +94,7 @@ const deleteSchedule = async (rawData) => {
 module.exports = {
   getAllSchedules,
   createNewSchedule,
+  deleteScheduleById,
   deleteSchedule,
   updateSchedule,
 };

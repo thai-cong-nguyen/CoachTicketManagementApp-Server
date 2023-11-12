@@ -55,6 +55,41 @@ const checkPhoneNumberExisted = async (phoneNumber) => {
   return passenger || staff ? true : false;
 };
 
+const checkEmailOrPhoneNumberExisted = async (rawData) => {
+  try {
+    const data = rawData.body;
+    const phoneNumber = data.phoneNumber ? data.phoneNumber : null;
+    const email = data.email ? data.email : null;
+    const passenger = await (email
+      ? await db.Passenger.findOne({
+          where: { email: email },
+          include: [
+            {
+              model: db.UserAccount,
+              as: "UserAccountData",
+              attributes: { exclude: ["password"] },
+            },
+          ],
+        })
+      : await db.Passenger.findOne({
+          where: { phoneNumber: phoneNumber },
+          include: [
+            {
+              model: db.UserAccount,
+              as: "UserAccountData",
+              attributes: { exclude: ["password"] },
+            },
+          ],
+        }));
+    return passenger
+      ? apiReturns.success(200, "Email or Phone number is Existed")
+      : apiReturns.error(404, "Email or Phone number is not Existed");
+  } catch (error) {
+    console.log(error);
+    return apiReturns.error(500, "Some thing went wrong");
+  }
+};
+
 const registerNewUserAccount = async (rawData) => {
   try {
     const data = rawData.body;
@@ -118,7 +153,9 @@ const registerNewUserAccount = async (rawData) => {
     } catch (error) {
       return apiReturns.error(500, error.message);
     }
-    return apiReturns.success(200, "Register Successfully");
+    return apiReturns.success(200, "Register Successfully", {
+      userId: userAccount.id ? userAccount.id : null,
+    });
   } catch (error) {
     console.error(error.message);
     return apiReturns.validation("Some thing went wrong");
@@ -132,6 +169,7 @@ const checkPassword = async (inputPassword, hashPassword) => {
 const loginUserAccount = async (rawData, res) => {
   try {
     const data = rawData.body;
+    let userId = null;
     let username = null;
     let password = null;
     let roleId = null;
@@ -143,6 +181,7 @@ const loginUserAccount = async (rawData, res) => {
       if (!user) {
         return apiReturns.validation("User account does not exist");
       }
+      userId = user.id;
       username = user.userName;
       password = user.password;
       roleId = user.roleId;
@@ -170,6 +209,7 @@ const loginUserAccount = async (rawData, res) => {
             ],
           }));
       if (passenger) {
+        userId = await passenger.dataValues.UserAccountData.id;
         username = await passenger.dataValues.UserAccountData.userName;
         password = await passenger.dataValues.UserAccountData.password;
         roleId = await passenger.dataValues.UserAccountData.roleId;
@@ -188,6 +228,7 @@ const loginUserAccount = async (rawData, res) => {
     }
     const roleUser = await getRolesUser(roleId);
     const payload = {
+      userId: userId,
       userName: username,
       role: roleUser.dataValues,
     };
@@ -201,7 +242,7 @@ const loginUserAccount = async (rawData, res) => {
       JWT_SECRET_ACCESS_TOKEN,
       JWT_EXPIRES_IN_ACCESS_TOKEN
     );
-    res.cookie("refreshToken", refreshToken, {
+    res.cookie("refreshToken", `Bearer ${refreshToken}`, {
       httpOnly: true,
       maxAge: 24 * 60 * 60 * 1000, // Expires after 24 hours
       sameSite: "strict",
@@ -216,14 +257,14 @@ const loginUserAccount = async (rawData, res) => {
     });
   } catch (error) {
     console.log(error);
-    return apiReturns.error(400, error.message);
+    return apiReturns.error(500, "Some thing went wrong");
   }
 };
 
 const requestRefreshToken = async (rawData, res) => {
   try {
     const { userName } = rawData.body;
-    const refreshTokenInCookie = rawData.cookies.refreshToken;
+    const refreshTokenInCookie = rawData.cookies.refreshToken.split(" ")[1];
     if (!refreshTokenInCookie)
       return apiReturns.error(401, "You're not authenticated");
     const refreshTokenInRedis = await getRedis(userName);
@@ -254,7 +295,7 @@ const requestRefreshToken = async (rawData, res) => {
           key: userName,
           value: JSON.stringify(newRefreshToken),
         });
-        await res.cookie("refreshToken", newRefreshToken, {
+        await res.cookie("refreshToken", `Bearer ${newRefreshToken}`, {
           httpOnly: true,
           maxAge: 24 * 60 * 60 * 1000, // Expires after 24 hours
           sameSite: "strict",
@@ -266,7 +307,7 @@ const requestRefreshToken = async (rawData, res) => {
     );
   } catch (error) {
     console.log(error);
-    return apiReturns.error(400, error.message);
+    return apiReturns.error(500, "Some thing went wrong");
   }
 };
 
@@ -276,15 +317,59 @@ const logoutAccount = async (rawData, res) => {
     await delRedis(rawData.body.userName);
     return apiReturns.success(200, "Logged Out!");
   } catch (error) {
-    console.log(error.message);
-    return apiReturns.error(400, error.message);
+    console.log(error);
+    return apiReturns.error(500, "Some thing went wrong");
+  }
+};
+
+const resetPassword = async (rawData, res) => {
+  try {
+    const data = rawData.body;
+    const phoneNumber = data.phoneNumber ? data.phoneNumber : null;
+    const email = data.email ? data.email : null;
+    const passenger = await (email
+      ? await db.Passenger.findOne({
+          where: { email: email },
+          include: [
+            {
+              model: db.UserAccount,
+              as: "UserAccountData",
+              attributes: { exclude: ["password"] },
+            },
+          ],
+        })
+      : await db.Passenger.findOne({
+          where: { phoneNumber: phoneNumber },
+          include: [
+            {
+              model: db.UserAccount,
+              as: "UserAccountData",
+              attributes: { exclude: ["password"] },
+            },
+          ],
+        }));
+    if (!passenger) {
+      return apiReturns.error(404, "Email or Phone Number not found");
+    }
+    await db.UserAccount.update(
+      {
+        password: await hashPassword(data.newPassword),
+      },
+      { where: { id: passenger.UserAccountData.id } }
+    );
+    return apiReturns.success(200, "Reset password successfully");
+  } catch (error) {
+    console.log(error);
+    return apiReturns.error(400, "Something went wrong");
   }
 };
 
 module.exports = {
   hashPassword,
   registerNewUserAccount,
+  checkEmailOrPhoneNumberExisted,
   loginUserAccount,
   requestRefreshToken,
   logoutAccount,
+  resetPassword,
 };

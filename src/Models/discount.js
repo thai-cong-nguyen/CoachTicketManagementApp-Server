@@ -17,7 +17,7 @@ module.exports = (sequelize, DataTypes) => {
       status: DataTypes.BOOLEAN,
       key: DataTypes.STRING,
       title: DataTypes.STRING,
-      expireData: DataTypes.DATE,
+      expireDate: DataTypes.DATE,
       quantity: DataTypes.INTEGER,
       isSystem: DataTypes.BOOLEAN,
     },

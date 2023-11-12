@@ -9,7 +9,7 @@ exports.success = (statusCode, message, data = {}) => {
 
 exports.error = (statusCode, message) => {
   // List of common HTTP request code
-  const codes = [200, 201, 400, 401, 404, 403, 422, 500];
+  const codes = [400, 401, 404, 403, 500];
 
   // Get matched code
   const findCode = codes.find((code) => code == statusCode);
@@ -28,7 +28,6 @@ exports.validation = (errors) => {
   return {
     error: true,
     code: 422,
-    message: "Validation Errors",
     errors,
   };
 };

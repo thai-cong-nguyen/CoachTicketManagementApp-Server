@@ -3,6 +3,7 @@ const bcrypt = require("bcrypt");
 const { Op } = require("sequelize");
 const db = require("../Models/index");
 const apiReturns = require("../Helpers/apiReturns.helper");
+const { deleteShuttlePassengerById } = require("./shuttlePassenger.service");
 
 const getAllShuttleRoutes = async ({ page, limit, order, ...query }) => {
   try {
@@ -48,7 +49,17 @@ const updateShuttleRoute = async (rawData) => {
 };
 
 const deleteShuttleRouteById = async (id) => {
-  await db.ShuttleRoute.destroy({ where: { id: id } });
+  const { count, rows } = await db.ShuttlePassenger.findOne({
+    where: { shuttleRoute: id },
+  });
+  if (count > 0) {
+    await Promise.all(
+      rows.map(async ({ id }) => {
+        await deleteShuttlePassengerById(id);
+      })
+    );
+  }
+  await db.ShuttleRoute.destroy({ where: { id } });
 };
 
 const deleteShuttleRoute = async (rawData) => {

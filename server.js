@@ -18,10 +18,6 @@ app.use(cookieParser());
 // Initialize API Routes
 apiWebRoutes(app);
 
-app.use((req, res, next) => {
-  next();
-});
-
 // Connect database
 connectDB();
 

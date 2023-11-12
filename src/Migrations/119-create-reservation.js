@@ -45,9 +45,10 @@ module.exports = {
         references: { model: "Payments", key: "id" },
       },
       discountId: {
-        allowNull: false,
+        allowNull: true,
         type: Sequelize.BIGINT,
         references: { model: "Discounts", key: "id" },
+        defaultValue: null,
       },
       note: {
         defaultValue: null,

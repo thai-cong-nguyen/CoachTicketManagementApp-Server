@@ -13,7 +13,7 @@ const { verifyJWT } = require("../Middlewares/JWT.middleware");
 router.use(verifyJWT);
 router.get("/", getAllDiscountsController);
 router.post("/", createNewDiscountController);
-router.patch("/:id", updateDiscountController);
-router.delete("/:id", deleteDiscountController);
+router.patch("/:discountId", updateDiscountController);
+router.delete("/:discountId", deleteDiscountController);
 
 module.exports = router;

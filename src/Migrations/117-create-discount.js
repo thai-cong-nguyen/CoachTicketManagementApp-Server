@@ -9,14 +9,14 @@ module.exports = {
         primaryKey: true,
         type: Sequelize.BIGINT,
       },
-      userId: {
-        allowNull: true,
-        type: Sequelize.BIGINT,
-        references: { model: "UserAccounts", key: "id" },
-      },
       value: {
         allowNull: false,
         type: Sequelize.FLOAT,
+      },
+      status: {
+        allowNull: false,
+        type: Sequelize.BOOLEAN,
+        defaultValue: false,
       },
       key: {
         allowNull: false,
@@ -25,6 +25,21 @@ module.exports = {
       title: {
         allowNull: false,
         type: Sequelize.STRING,
+      },
+      expireDate: {
+        allowNull: true,
+        type: Sequelize.DATE,
+        defaultValue: null,
+      },
+      quantity: {
+        allowNull: false,
+        type: Sequelize.INTEGER,
+        defaultValue: "0",
+      },
+      isSystem: {
+        allowNull: false,
+        type: Sequelize.BOOLEAN,
+        defaultValue: false,
       },
     });
   },

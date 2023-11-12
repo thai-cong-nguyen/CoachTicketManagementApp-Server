@@ -34,6 +34,10 @@ const createNewStaffReport = async (rawData) => {
   }
 };
 
+const deleteStaffReportById = async (id) => {
+  await db.StaffReport.destroy({ where: { id: id } });
+};
+
 const deleteStaffReport = async (rawData) => {
   try {
     const id = rawData.params.id;
@@ -41,7 +45,7 @@ const deleteStaffReport = async (rawData) => {
     if (!staffReport) {
       return apiReturns.error(404, "Report does not exist");
     }
-    await db.StaffReport.destroy({ where: { id: id } });
+    await deleteStaffReportById(id);
     return apiReturns.success(200, "Delete Successfully");
   } catch (error) {
     console.log(error.message);
@@ -53,4 +57,5 @@ module.exports = {
   getAllStaffReports,
   createNewStaffReport,
   deleteStaffReport,
+  deleteStaffReportById,
 };

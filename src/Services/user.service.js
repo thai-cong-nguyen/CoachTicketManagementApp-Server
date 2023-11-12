@@ -3,6 +3,7 @@ const bcrypt = require("bcrypt");
 const { Op } = require("sequelize");
 const db = require("../Models/index");
 const apiReturns = require("../Helpers/apiReturns.helper");
+const { hashPassword } = require("../Services/auth.service");
 
 const getAllUserAccounts = async ({ page, limit, order, ...query }) => {
   try {
@@ -17,10 +18,11 @@ const getAllUserAccounts = async ({ page, limit, order, ...query }) => {
       attributes: { exclude: ["password"] },
       ...queries,
     });
-    return apiReturns.success(200, "Get All User Accounts Successfully", users);
+    if (users.rows <= 0) return apiReturns.error(401, "User Account not found");
+    return apiReturns.success(200, "Get Successfully", users);
   } catch (error) {
     console.log(error.message);
-    return apiReturns.error(400, error.message);
+    return apiReturns.error(500, "Something went wrong");
   }
 };
 
@@ -36,7 +38,7 @@ const getCurrentUserAccount = async (rawData) => {
       : apiReturns.validation("Can not get current user account");
   } catch (error) {
     console.error(error.message);
-    return apiReturns.error(400, error.message);
+    return apiReturns.error(500, "Something went wrong");
   }
 };
 
