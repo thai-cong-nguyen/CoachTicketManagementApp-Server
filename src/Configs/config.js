@@ -29,18 +29,40 @@ const config = () => {
           : {},
     },
     test: {
-      username: "root",
-      password: null,
-      database: "database_test",
-      host: "127.0.0.1",
-      dialect: "mysql",
+      username: DB_USERNAME,
+      password: DB_PASSWORD,
+      database: DB_DATABASE_NAME,
+      host: DB_HOST,
+      port: DB_PORT,
+      dialect: DB_DIALECT,
+      logging: false,
+      dialectOptions:
+        DB_SSL === "true"
+          ? {
+              ssl: {
+                require: true,
+                rejectUnauthorized: false,
+              },
+            }
+          : {},
     },
     production: {
-      username: "root",
-      password: null,
-      database: "database_production",
-      host: "127.0.0.1",
-      dialect: "mysql",
+      username: DB_USERNAME,
+      password: DB_PASSWORD,
+      database: DB_DATABASE_NAME,
+      host: DB_HOST,
+      port: DB_PORT,
+      dialect: DB_DIALECT,
+      logging: false,
+      dialectOptions:
+        DB_SSL === "true"
+          ? {
+              ssl: {
+                require: true,
+                rejectUnauthorized: false,
+              },
+            }
+          : {},
     },
   };
 };
