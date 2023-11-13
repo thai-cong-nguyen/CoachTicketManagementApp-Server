@@ -4,6 +4,7 @@ const db = require("../Models/index");
 const apiReturns = require("../Helpers/apiReturns.helper");
 const { getRolesUser } = require("../Services/jwt.service");
 const { createJWT } = require("../Services/jwt.service");
+const { notAuthError } = require("../Middlewares/handleErrors.middleware");
 const { setRedis, getRedis, delRedis } = require("../Services/redis.service");
 const jwt = require("jsonwebtoken");
 
@@ -103,62 +104,58 @@ const registerNewUserAccount = async (rawData) => {
     const email = data.email ? data.email : null;
     const phoneNumber = data.phoneNumber ? data.phoneNumber : null;
     if (email && (await checkEmailExisted(email))) {
-      console.log(email, await checkEmailExisted(email));
       return apiReturns.validation("Email or Phone Number is already existed");
     } else if (phoneNumber && (await checkPhoneNumberExisted(phoneNumber))) {
       return apiReturns.validation("Email or Phone Number is already existed");
     }
-    try {
-      await db.sequelize.transaction(async (t) => {
-        const roleId = data.roleId ? data.roleId : "1";
-        const userAccount = await db.UserAccount.create(
+    let userAccount = null;
+    await db.sequelize.transaction(async (t) => {
+      const roleId = data.roleId ? data.roleId : "1";
+      userAccount = await db.UserAccount.create(
+        {
+          userName: data.userName,
+          password: hashPasswordFromBcrypt,
+          avatar: data.avatar ? data.avatar : defaultAvatar,
+          roleId: roleId,
+          memberShipId: data.memberShipId ? data.memberShipId : "1",
+          rewardPoint: data.rewardPoint ? data.rewardPoint : 0,
+        },
+        { transaction: t }
+      );
+      if (!roleId || roleId == "1") {
+        const passenger = await db.Passenger.create(
           {
-            userName: data.userName,
-            password: hashPasswordFromBcrypt,
-            avatar: data.avatar ? data.avatar : defaultAvatar,
-            roleId: roleId,
-            memberShipId: data.memberShipId ? data.memberShipId : "1",
-            rewardPoint: data.rewardPoint ? data.memberShipId : 0,
+            fullName: data.userName,
+            email: email,
+            address: data.address ? data.address : null,
+            phoneNumber: phoneNumber,
+            userId: userAccount.id,
+            gender: data.gender ? data.gender : null,
           },
           { transaction: t }
         );
-        if (!roleId || roleId == "1") {
-          const passenger = await db.Passenger.create(
-            {
-              fullName: data.userName,
-              email: email,
-              address: data.address ? data.address : null,
-              phoneNumber: phoneNumber,
-              userId: userAccount.id,
-              gender: data.gender ? data.gender : null,
-            },
-            { transaction: t }
-          );
-        } else if (roleId == "2") {
-          const positionId = data.positionId ? data.positionId : "1";
-          const staff = await db.Staff.create(
-            {
-              fullName: data.userName,
-              email: email,
-              address: data.address ? data.address : null,
-              phoneNumber: phoneNumber,
-              positionId: positionId,
-              userId: userAccount.id,
-              gender: data.gender ? data.gender : null,
-            },
-            { transaction: t }
-          );
-        }
-      });
-    } catch (error) {
-      return apiReturns.error(500, error.message);
-    }
+      } else if (roleId == "2") {
+        const positionId = data.positionId ? data.positionId : "1";
+        const staff = await db.Staff.create(
+          {
+            fullName: data.userName,
+            email: email,
+            address: data.address ? data.address : null,
+            phoneNumber: phoneNumber,
+            positionId: positionId,
+            userId: userAccount.id,
+            gender: data.gender ? data.gender : null,
+          },
+          { transaction: t }
+        );
+      }
+    });
     return apiReturns.success(200, "Register Successfully", {
       userId: userAccount.id ? userAccount.id : null,
     });
   } catch (error) {
-    console.error(error.message);
-    return apiReturns.validation("Some thing went wrong");
+    console.error(error);
+    return apiReturns.validation("Something went wrong");
   }
 };
 
@@ -242,7 +239,7 @@ const loginUserAccount = async (rawData, res) => {
       JWT_SECRET_ACCESS_TOKEN,
       JWT_EXPIRES_IN_ACCESS_TOKEN
     );
-    res.cookie("refreshToken", `Bearer ${refreshToken}`, {
+    res.cookie("refreshToken", refreshToken, {
       httpOnly: true,
       maxAge: 24 * 60 * 60 * 1000, // Expires after 24 hours
       sameSite: "strict",
@@ -264,9 +261,9 @@ const loginUserAccount = async (rawData, res) => {
 const requestRefreshToken = async (rawData, res) => {
   try {
     const { userName } = rawData.body;
-    const refreshTokenInCookie = rawData.cookies.refreshToken.split(" ")[1];
-    if (!refreshTokenInCookie)
-      return apiReturns.error(401, "You're not authenticated");
+    const refreshToken = rawData.cookies.refreshToken;
+    if (!refreshToken) return apiReturns.error(401, "You're not authenticated");
+    const refreshTokenInCookie = refreshToken.split(" ")[1];
     const refreshTokenInRedis = await getRedis(userName);
     if (refreshTokenInRedis != refreshTokenInCookie) {
       return apiReturns.error(403, "Refresh Token is not valid");
@@ -295,7 +292,7 @@ const requestRefreshToken = async (rawData, res) => {
           key: userName,
           value: JSON.stringify(newRefreshToken),
         });
-        await res.cookie("refreshToken", `Bearer ${newRefreshToken}`, {
+        await res.cookie("refreshToken", newRefreshToken, {
           httpOnly: true,
           maxAge: 24 * 60 * 60 * 1000, // Expires after 24 hours
           sameSite: "strict",
