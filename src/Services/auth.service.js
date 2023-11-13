@@ -292,13 +292,13 @@ const requestRefreshToken = async (rawData, res) => {
           key: userName,
           value: JSON.stringify(newRefreshToken),
         });
-        await res.cookie("refreshToken", newRefreshToken, {
+        await res.cookie("refreshToken", `Bearer ${newRefreshToken}`, {
           httpOnly: true,
           maxAge: 24 * 60 * 60 * 1000, // Expires after 24 hours
           sameSite: "strict",
         });
         return apiReturns.success(200, "Refresh Token Successfully", {
-          accessToken: newAccessToken,
+          accessToken: `Bearer ${newAccessToken}`,
         });
       }
     );
