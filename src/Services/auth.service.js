@@ -239,7 +239,7 @@ const loginUserAccount = async (rawData, res) => {
       JWT_SECRET_ACCESS_TOKEN,
       JWT_EXPIRES_IN_ACCESS_TOKEN
     );
-    res.cookie("refreshToken", refreshToken, {
+    res.cookie("refreshToken", `Bearer ${refreshToken}`, {
       httpOnly: true,
       maxAge: 24 * 60 * 60 * 1000, // Expires after 24 hours
       sameSite: "strict",
@@ -250,7 +250,7 @@ const loginUserAccount = async (rawData, res) => {
     });
     return apiReturns.success(200, "Login Successfully", {
       ...payload,
-      access_token: accessToken,
+      access_token: `Bearer ${accessToken}`,
     });
   } catch (error) {
     console.log(error);
