@@ -64,7 +64,7 @@ const checkEmailOrPhoneNumberExisted = async (rawData) => {
     if (!phoneNumber && !email) {
       return apiReturns.error(404, "Email or Phone number is not Existed");
     }
-    const passenger = await (email
+    const passenger = email
       ? await db.Passenger.findOne({
           where: { email: email },
           include: [
@@ -84,7 +84,7 @@ const checkEmailOrPhoneNumberExisted = async (rawData) => {
               attributes: { exclude: ["password"] },
             },
           ],
-        }));
+        });
     return passenger
       ? apiReturns.success(200, "Email or Phone number is Existed")
       : apiReturns.error(404, "Email or Phone number is not Existed");

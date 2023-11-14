@@ -15,7 +15,7 @@ router.post("/register", registerNewUserAccountController);
 router.post("/login", loginNewUserAccountController);
 router.post("/refresh", requestRefreshTokenController);
 router.patch("/reset-password", resetPasswordController);
-router.get(
+router.post(
   "/check-email-phone-number",
   checkEmailOrPhoneNumberExistedController
 );
