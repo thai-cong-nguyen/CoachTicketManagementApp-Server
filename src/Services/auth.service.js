@@ -61,6 +61,9 @@ const checkEmailOrPhoneNumberExisted = async (rawData) => {
     const data = rawData.body;
     const phoneNumber = data.phoneNumber ? data.phoneNumber : null;
     const email = data.email ? data.email : null;
+    if (!phoneNumber && !email) {
+      return apiReturns.error(404, "Email or Phone number is not Existed");
+    }
     const passenger = await (email
       ? await db.Passenger.findOne({
           where: { email: email },
