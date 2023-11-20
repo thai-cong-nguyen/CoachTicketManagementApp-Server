@@ -8,6 +8,7 @@ const {
   chooseSeatTicketController,
   changeSeatTicketController,
   getAllTicketsOfUsersController,
+  getUserTicketsHistoryController,
 } = require("../Controllers/ticket.controller");
 
 router.use(verifyJWT);
@@ -16,5 +17,6 @@ router.get("/user", getAllTicketsOfUsersController);
 router.post("/choose-seat", chooseSeatTicketController);
 router.post("/fill-ticket-info", fillTicketInfoController);
 router.patch("/change-seat", changeSeatTicketController);
+router.get("/history", getUserTicketsHistoryController);
 
 module.exports = router;

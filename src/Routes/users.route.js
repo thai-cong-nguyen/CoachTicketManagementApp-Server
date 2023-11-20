@@ -20,13 +20,16 @@ const {
 
 // private router
 router.use(verifyJWT);
-router.get("/:id", getCurrentUserAccountController);
-router.post("/changePassword/:id", changePasswordCurrentUserAccountController);
+router.get("/:userId", getCurrentUserAccountController);
+router.post(
+  "/changePassword/:userId",
+  changePasswordCurrentUserAccountController
+);
+router.patch("/:userId", updateUserAccountController);
 
 // Admin permission
 router.use(isAdmin);
 router.get("/", getAllUserAccountsController);
-router.delete("/:id", deleteUserAccountByIdController);
-router.patch("/:id", updateUserAccountController);
+router.delete("/:userId", deleteUserAccountByIdController);
 
 module.exports = router;

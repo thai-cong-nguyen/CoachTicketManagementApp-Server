@@ -22,7 +22,7 @@ module.exports = (sequelize, DataTypes) => {
       image: DataTypes.STRING,
       idCoachType: DataTypes.BIGINT,
       capacity: DataTypes.INTEGER,
-      status: DataTypes.STRING,
+      status: DataTypes.BOOLEAN,
       lat: DataTypes.FLOAT,
       lng: DataTypes.FLOAT,
     },

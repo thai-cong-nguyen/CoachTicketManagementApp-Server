@@ -89,4 +89,72 @@ const getSeatTrip = async (rawData) => {
   }
 };
 
-module.exports = { getAllTrips, getSeatTrip };
+const countNumberOfPassengerByScheduleId = async (scheduleId) => {
+  const reservations = await db.Reservation.findAndCountAll({
+    where: { scheduleId: scheduleId },
+  });
+  return reservations ? reservations.count : 0;
+};
+
+const getPopularTrip = async (rawData) => {
+  try {
+    const data = rawData.body;
+    let allTrips = await db.Schedule.findAndCountAll({
+      include: [
+        {
+          model: db.Coach,
+          as: "CoachData",
+          include: [
+            {
+              model: db.CoachType,
+              as: "CoachTypeData",
+            },
+          ],
+        },
+        {
+          model: db.Route,
+          as: "RouteData",
+        },
+        {
+          model: db.Staff,
+          as: "DriverData",
+          attributes: ["id", "fullName", "phoneNumber", "gender"],
+        },
+        {
+          model: db.Staff,
+          as: "CoachAssistantData",
+          attributes: ["id", "fullName", "phoneNumber", "gender"],
+        },
+        {
+          model: db.Places,
+          as: "StartPlaceData",
+        },
+        {
+          model: db.Places,
+          as: "ArrivalPlaceData",
+        },
+      ],
+    });
+    let mostOfPassenger = 0;
+    let scheduleId = null;
+    await allTrips.rows.sort(async (before, after) => {
+      const beforePassengers = await countNumberOfPassengerByScheduleId(
+        before.id
+      );
+      const afterPassengers = await countNumberOfPassengerByScheduleId(
+        after.id
+      );
+      return beforePassengers == afterPassengers
+        ? 0
+        : beforePassengers > afterPassengers
+        ? -1
+        : 1;
+    });
+    return apiReturns.success(200, "Get successfully", allTrips);
+  } catch (error) {
+    console.error(error.message);
+    return apiReturns.error(400, error.message);
+  }
+};
+
+module.exports = { getAllTrips, getSeatTrip, getPopularTrip };
