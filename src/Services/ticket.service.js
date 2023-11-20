@@ -3,8 +3,9 @@ const bcrypt = require("bcrypt");
 const { Op } = require("sequelize");
 const db = require("../Models/index");
 const apiReturns = require("../Helpers/apiReturns.helper");
+const { arraysAreEqual } = require("../Utils/compare.util");
 
-const getTicket = async ({ queries, ...query }) => {
+const getTickets = async ({ queries, reservationId, ...query }) => {
   const reservations = await db.Reservation.findAndCountAll({
     where: query,
     ...queries,
@@ -95,10 +96,20 @@ const getTicket = async ({ queries, ...query }) => {
     }
     return acc;
   }, []);
-  return tickets;
+  const result = tickets.rows.filter((ticket) =>
+    arraysAreEqual(ticket.reservationId, reservationId)
+  );
+  return result;
 };
 
-const getAllTickets = async ({ page, limit, order, ...query }) => {
+const getAllTickets = async ({
+  page,
+  limit,
+  order,
+  userId,
+  reservationId,
+  ...query
+}) => {
   try {
     const queries = { raw: true, nest: true };
     const offset = !page || +page <= 1 ? 0 : +page - 1;
@@ -106,7 +117,9 @@ const getAllTickets = async ({ page, limit, order, ...query }) => {
     queries.offset = offset * flimit;
     queries.limit = flimit;
     if (order) queries.order = order;
-    const tickets = await getTicket({ queries, ...query });
+    if (userId) queries.userId = userId;
+
+    const tickets = await getTickets({ queries, reservationId, ...query });
     return apiReturns.success(200, "Get Successfully", tickets);
   } catch (error) {
     console.error(error.message);
@@ -127,6 +140,23 @@ const getAllTicketsOfUsers = async ({ page, limit, order, userId }) => {
     const historyTickets = await getTickets({ queries, [Op.notIn]: ["3"] });
     const res = { current: currentTickets, history: historyTickets };
     return apiReturns.success(200, "Get Successfully", res);
+  } catch (error) {
+    console.error(error.message);
+    return apiReturns.error(400, error.message);
+  }
+};
+
+const getUserTicketsHistory = async ({ page, limit, order, userId }) => {
+  try {
+    const queries = { raw: true, nest: true };
+    const offset = !page || +page <= 1 ? 0 : +page - 1;
+    const flimit = +limit || +process.env.PAGINATION_LIMIT;
+    queries.offset = offset * flimit;
+    queries.limit = flimit;
+    if (order) queries.order = order;
+    queries.userId = userId;
+    const historyTickets = await getTickets({ queries, [Op.notIn]: ["3"] });
+    return apiReturns.success(200, "Get Successfully", historyTickets);
   } catch (error) {
     console.error(error.message);
     return apiReturns.error(400, error.message);
@@ -216,4 +246,5 @@ module.exports = {
   chooseSeatTicket,
   changeSeatTicket,
   getAllTicketsOfUsers,
+  getUserTicketsHistory,
 };

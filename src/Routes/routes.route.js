@@ -13,7 +13,7 @@ router.use(verifyJWT);
 router.get("/", getAllRoutesController);
 router.use(isAdmin);
 router.post("/", createNewRouteController);
-router.post("/:id", updateRouteController);
-router.delete("/:id", deleteRouteController);
+router.patch("/:routeId", updateRouteController);
+router.delete("/:routeId", deleteRouteController);
 
 module.exports = router;

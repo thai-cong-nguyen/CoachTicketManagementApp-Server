@@ -3,6 +3,7 @@ const bcrypt = require("bcrypt");
 const { Op } = require("sequelize");
 const db = require("../Models/index");
 const apiReturns = require("../Helpers/apiReturns.helper");
+const { deleteScheduleById } = require("./schedule.service");
 
 const getAllRoutes = async ({ page, limit, order, ...query }) => {
   try {
@@ -55,10 +56,16 @@ const createNewRoute = async (rawData) => {
 
 const updateRoute = async (rawData) => {
   try {
-    const { id } = rawData.params;
+    const { routeId } = rawData.params;
     const { ...updateData } = rawData.body;
-    await db.Route.update(updateData, { where: { id: id } });
-    return apiReturns.success(200, "Update Route Successful");
+    const isUpdated = await db.Route.update(updateData, {
+      where: { id: routeId },
+    });
+    if (!isUpdated) {
+      return apiReturns.error(400, "Route update failed");
+    }
+    const updatedRoute = await db.Route.findOne({ where: { id: routeId } });
+    return apiReturns.success(200, "Update Route Successful", updatedRoute);
   } catch (error) {
     console.error(error.message);
     return apiReturns.error(400, error.message);
@@ -66,13 +73,15 @@ const updateRoute = async (rawData) => {
 };
 
 const deleteRouteById = async (id) => {
+  await deleteScheduleById(i);
+  const schedules = await db.Schedule.findAndCountAll();
   await db.Route.destroy({ where: { id: id } });
 };
 
 const deleteRoute = async (rawData) => {
   try {
-    const { id } = rawData.params;
-    await deleteRouteById(id);
+    const { routeId } = rawData.params;
+    await deleteRouteById(routeId);
     return apiReturns.success(200, "Delete Route Successful");
   } catch (error) {
     console.error(error.message);

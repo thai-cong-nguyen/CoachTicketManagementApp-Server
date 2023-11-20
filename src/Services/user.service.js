@@ -28,16 +28,42 @@ const getAllUserAccounts = async ({ page, limit, order, ...query }) => {
 
 const getCurrentUserAccount = async (rawData) => {
   try {
-    const { id } = rawData.user;
-    const user = await db.UserAccount.findOne({
-      where: { id: id },
-      attributes: { exclude: ["password"] },
+    const userId = rawData.params.userId;
+
+    // const user = await db.UserAccount.findOne({
+    //   where: { id: userId },
+    //   attributes: { exclude: ["password"] },
+    // });
+    const passenger = await db.Passenger.findAndCountAll({
+      where: {
+        userId: userId,
+      },
+      include: [
+        {
+          model: db.UserAccount,
+          as: "UserAccountData",
+          attributes: { exclude: ["password"] },
+        },
+      ],
     });
-    return user
-      ? apiReturns.success(200, "Get Current User Account Successfully", user)
-      : apiReturns.validation("Can not get current user account");
+    const userAccount = await db.UserAccount.findOne({
+      where: { id: userId },
+    });
+    return !passenger
+      ? apiReturns.validation("Can not get current user account")
+      : passenger.count > 0
+      ? apiReturns.success(
+          200,
+          "Get Current UserAccount Successfully",
+          passenger
+        )
+      : apiReturns.success(
+          200,
+          "Get Current UserAccount Successfully",
+          userAccount
+        );
   } catch (error) {
-    console.error(error.message);
+    console.error(error);
     return apiReturns.error(500, "Something went wrong");
   }
 };
@@ -46,7 +72,7 @@ const deleteUserAccountById = async (rawData) => {
   try {
     await db.sequelize.transaction(async (t) => {
       const passengerId = await db.Passenger.findOne({
-        where: { userId: rawData.params.id },
+        where: { userId: rawData.params.userId },
         attributes: { includes: ["id"] },
       });
       await db.Passenger.destroy(
@@ -68,7 +94,7 @@ const deleteUserAccountById = async (rawData) => {
 const updateUserAccount = async (rawData) => {
   try {
     const { userName, avatar } = rawData.body;
-    const userId = rawData.params.id;
+    const userId = rawData.params.userId;
     await db.sequelize.transaction(async (t) => {
       const checkNewUser = await db.UserAccount.findOne(
         {
@@ -104,7 +130,7 @@ const updateUserAccount = async (rawData) => {
 
 const changePasswordCurrentUserAccount = async (rawData) => {
   try {
-    const userId = rawData.user.id;
+    const userId = rawData.user.userId;
     const user = await db.UserAccount.findOne({
       where: { id: userId },
       attributes: { include: ["id", "password"] },
