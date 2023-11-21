@@ -37,7 +37,7 @@ const paymentGateway = async (rawData) => {
       );
     }
 
-    return apiReturn.success(200, "Payment Successfully", {
+    return apiReturns.success(200, "Payment Successfully", {
       paymentIntent: paymentIntent.client_secret,
       ephemeralKey: ephemeralKey.secret,
       customer: "cus_OjlFGeYC9TMFbu",
@@ -45,8 +45,8 @@ const paymentGateway = async (rawData) => {
         "pk_test_51MhlhmBI7ZTpJ5xJUpmkPO48Z8X6ckuQeAN1Rcm9d88jUNlJCawJ1MFKYxPbqZFUeURK3M7m3jhCjdI3KXksOwf100gFkPoIL5",
     });
   } catch (error) {
-    console.error(error.message);
-    return apiReturns.error(400).send(error.message);
+    console.error(error);
+    return apiReturns.error(400, error.message);
   }
 };
 
