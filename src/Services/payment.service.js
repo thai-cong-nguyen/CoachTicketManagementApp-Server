@@ -8,7 +8,18 @@ const apiReturns = require("../Helpers/apiReturns.helper");
 const paymentGateway = async (rawData) => {
   try {
     const { discountId, userId, ...data } = rawData.body;
-
+    if (discountId && userId) {
+      const discount = await db.UserDiscount.findOne({
+        where: { userId: userId, discountId: discountId, status: "0" },
+      });
+      if (!discount) {
+        return apiReturns.error(404, "Discount is not available");
+      }
+      await db.UserDiscount.update(
+        { status: "1" },
+        { where: { userId: userId, discountId: discountId } }
+      );
+    }
     // Use an existing Customer ID if this is a returning customer.
     const ephemeralKey = await stripe.ephemeralKeys.create(
       { customer: "cus_OjlFGeYC9TMFbu" },
@@ -24,22 +35,9 @@ const paymentGateway = async (rawData) => {
         enabled: true,
       },
     });
-    if (discountId && userId) {
-      const discount = await db.UserDiscount.findOne({
-        where: { userId: userId, discountId: discountId, status: "0" },
-      });
-      if (!discount) {
-        return apiReturns.error(404, "Discount is not available");
-      }
-      await db.UserDiscount.update(
-        { status: "1" },
-        { where: { userId: userId, discountId: discountId } }
-      );
-    }
-
     return apiReturns.success(200, "Payment Successfully", {
-      paymentIntent: paymentIntent.client_secret,
-      ephemeralKey: ephemeralKey.secret,
+      paymentIntent: await paymentIntent.client_secret,
+      ephemeralKey: await ephemeralKey.secret,
       customer: "cus_OjlFGeYC9TMFbu",
       publishableKey:
         "pk_test_51MhlhmBI7ZTpJ5xJUpmkPO48Z8X6ckuQeAN1Rcm9d88jUNlJCawJ1MFKYxPbqZFUeURK3M7m3jhCjdI3KXksOwf100gFkPoIL5",
