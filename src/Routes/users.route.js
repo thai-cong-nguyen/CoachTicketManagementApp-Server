@@ -20,7 +20,7 @@ const {
 
 // private router
 router.use(verifyJWT);
-router.get("/:userId", getCurrentUserAccountController);
+router.get("/currentAccount", getCurrentUserAccountController);
 router.post(
   "/changePassword/:userId",
   changePasswordCurrentUserAccountController
