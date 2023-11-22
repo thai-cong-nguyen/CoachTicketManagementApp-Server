@@ -3,6 +3,7 @@ const bcrypt = require("bcrypt");
 const { Op } = require("sequelize");
 const db = require("../Models/index");
 const apiReturns = require("../Helpers/apiReturns.helper");
+const { renameKeyRedis } = require("./redis.service");
 const { hashPassword } = require("../Services/auth.service");
 
 const getAllUserAccounts = async ({ page, limit, order, ...query }) => {
@@ -53,6 +54,7 @@ const getAllUserAccounts = async ({ page, limit, order, ...query }) => {
 const getCurrentUserAccount = async (rawData) => {
   try {
     const userData = rawData.user;
+    console.log(userData);
     let userAccount = null;
     if (userData.role.id === "1") {
       userAccount = await db.Passenger.findOne({
@@ -117,36 +119,58 @@ const deleteUserAccountById = async (rawData) => {
   }
 };
 
-const updateUserAccount = async (rawData) => {
+const updateUserAccountById = async (rawData) => {
   try {
-    const { userName, avatar } = rawData.body;
+    const { fullName, email, phoneNumber, userName, avatar } = rawData.body;
     const userId = rawData.params.userId;
-    await db.sequelize.transaction(async (t) => {
-      const checkNewUser = await db.UserAccount.findOne(
-        {
-          where: { userName: userName },
-        },
-        { transaction: t }
-      );
-      if (checkNewUser) {
-        return apiReturns.validation("User name is already existed");
-      }
-      const oldUser = await db.UserAccount.findOne({
-        where: { id: userId },
+    // await db.sequelize.transaction(async (t) => {
+    //   const checkNewUser = await db.UserAccount.findOne(
+    //     {
+    //       where: { userName: userName },
+    //     },
+    //     { transaction: t }
+    //   );
+    //   if (checkNewUser) {
+    //     return apiReturns.validation("User name is already existed");
+    //   }
+    //   const oldUser = await db.UserAccount.findOne({
+    //     where: { id: userId },
+    //   });
+    //   await db.UserAccount.update(
+    //     {
+    //       userName: userName ? userName : oldUser.userName,
+    //       avatar: avatar ? avatar : oldUser.avatar,
+    //     },
+    //     {
+    //       where: {
+    //         id: userId,
+    //       },
+    //     },
+    //     { transaction: t }
+    //   );
+    // });
+    let updatedInfo = {};
+    let updatedAccount = {};
+    if (fullName) updatedInfo.fullName = fullName;
+    if (email) updatedInfo.email = email;
+    if (phoneNumber) updatedInfo.phoneNumber = phoneNumber;
+    if (avatar) updatedAccount.avatar = avatar;
+    if (userName) {
+      const user = await db.UserAccount.findOne({
+        where: { userName: userName },
       });
-      await db.UserAccount.update(
-        {
-          userName: userName ? userName : oldUser.userName,
-          avatar: avatar ? avatar : oldUser.avatar,
-        },
-        {
-          where: {
-            id: userId,
-          },
-        },
-        { transaction: t }
-      );
-    });
+      if (user) {
+        return apiReturns.validation("User name is already in use");
+      }
+      renameKeyRedis({ oldKey: rawData.user.userName, newKey: userName });
+      updatedAccount.userName = userName;
+    }
+    await db.UserAccount.update(updatedAccount, { where: { id: userId } });
+    if (rawData.user.role.id === "1") {
+      await db.Passenger.update(updatedInfo, { where: { userId: userId } });
+    } else if (rawData.user.role.id === "2") {
+      await db.Staff.update(updatedInfo, { where: { userId: userId } });
+    }
     return apiReturns.success(200, "Updated User Account Successfully");
   } catch (error) {
     console.log(error.message);
@@ -180,6 +204,6 @@ module.exports = {
   getAllUserAccounts,
   getCurrentUserAccount,
   deleteUserAccountById,
-  updateUserAccount,
+  updateUserAccountById,
   changePasswordCurrentUserAccount,
 };
