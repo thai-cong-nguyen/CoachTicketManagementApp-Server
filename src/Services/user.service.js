@@ -53,7 +53,6 @@ const getAllUserAccounts = async ({ page, limit, order, ...query }) => {
 const getCurrentUserAccount = async (rawData) => {
   try {
     const userData = rawData.user;
-    console.log(userData);
     let userAccount = null;
     if (userData.role.id === "1") {
       userAccount = await db.Passenger.findOne({

@@ -280,7 +280,11 @@ const requestRefreshToken = async (rawData, res) => {
         if (error) {
           return notAuthError("Access token maybe expired or invalid", res);
         }
-        const payload = { userName: decoded.userName, role: decoded.role };
+        const payload = {
+          userId: decoded.userId,
+          userName: decoded.userName,
+          role: decoded.role,
+        };
         newAccessToken = createJWT(
           payload,
           JWT_SECRET_ACCESS_TOKEN,
