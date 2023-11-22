@@ -9,6 +9,7 @@ const verifyJWT = async (req, res, next) => {
     return notAuthError("Require authorization", res);
   }
   const accessToken = token.split(" ")[1];
+  console.log("Access token: " + accessToken);
   jwt.verify(accessToken, JWT_SECRET_ACCESS_TOKEN, (error, decoded) => {
     if (error) {
       return notAuthError("Access token maybe expired or invalid", res);
