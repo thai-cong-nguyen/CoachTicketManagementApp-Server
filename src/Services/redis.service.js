@@ -17,4 +17,11 @@ module.exports = {
     await client.del(key);
     await client.disconnect();
   },
+  renameKeyRedis: async ({ oldKey, newKey }) => {
+    await client.connect();
+    const value = await client.get(oldKey);
+    await client.set(newKey, value);
+    await client.del(oldKey);
+    await client.disconnect();
+  },
 };
