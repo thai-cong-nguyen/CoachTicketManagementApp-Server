@@ -18,8 +18,32 @@ const getAllUserAccounts = async ({ page, limit, order, ...query }) => {
       attributes: { exclude: ["password"] },
       ...queries,
     });
-    if (users.rows <= 0) return apiReturns.error(401, "User Account not found");
-    return apiReturns.success(200, "Get Successfully", users);
+    if (users.count <= 0)
+      return apiReturns.error(401, "User Account not found");
+    const results = await Promise.all(
+      users.rows.map(async (user) => {
+        if (user.roleId === "1") {
+          return await db.Passenger.findOne({
+            where: { userId: user.id },
+            include: {
+              model: db.UserAccount,
+              as: "UserAccountData",
+              attributes: { exclude: ["password"] },
+            },
+          });
+        } else if (user.roleId === "2") {
+          return await db.Staff.findOne({
+            where: { userId: user.id },
+            include: {
+              model: db.UserAccount,
+              as: "UserAccountData",
+              attributes: { exclude: ["password"] },
+            },
+          });
+        } else return user;
+      })
+    );
+    return apiReturns.success(200, "Get Successfully", results);
   } catch (error) {
     console.log(error.message);
     return apiReturns.error(500, "Something went wrong");
@@ -28,40 +52,40 @@ const getAllUserAccounts = async ({ page, limit, order, ...query }) => {
 
 const getCurrentUserAccount = async (rawData) => {
   try {
-    const userId = rawData.params.userId;
-
-    // const user = await db.UserAccount.findOne({
-    //   where: { id: userId },
-    //   attributes: { exclude: ["password"] },
-    // });
-    const passenger = await db.Passenger.findAndCountAll({
-      where: {
-        userId: userId,
-      },
-      include: [
-        {
-          model: db.UserAccount,
-          as: "UserAccountData",
-          attributes: { exclude: ["password"] },
-        },
-      ],
-    });
-    const userAccount = await db.UserAccount.findOne({
-      where: { id: userId },
-    });
-    return !passenger
-      ? apiReturns.validation("Can not get current user account")
-      : passenger.count > 0
-      ? apiReturns.success(
-          200,
-          "Get Current UserAccount Successfully",
-          passenger
-        )
-      : apiReturns.success(
-          200,
-          "Get Current UserAccount Successfully",
-          userAccount
-        );
+    const userData = rawData.user;
+    const userAccount =
+      userData.role.id === 1
+        ? await db.Passenger.findOne({
+            where: {
+              userId: userData.id,
+            },
+            include: [
+              {
+                model: db.UserAccount,
+                as: "UserAccountData",
+                attributes: { exclude: ["password"] },
+              },
+            ],
+          })
+        : userData.role.id === 2
+        ? await db.Staff.findOne({
+            where: {
+              userId: userData.id,
+            },
+            include: [
+              {
+                model: db.UserAccount,
+                as: "UserAccountData",
+                attributes: { exclude: ["password"] },
+              },
+            ],
+          })
+        : await db.UserAccount.findByPk(userData.userId);
+    return apiReturns.success(
+      200,
+      "Get Current UserAccount Successfully",
+      userAccount
+    );
   } catch (error) {
     console.error(error);
     return apiReturns.error(500, "Something went wrong");

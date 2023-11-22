@@ -26,7 +26,14 @@ const getAllStaffReports = async ({ page, limit, order, ...query }) => {
 const createNewStaffReport = async (rawData) => {
   try {
     const data = rawData.body;
-    const staffReport = await db.StaffReport.create(data);
+    const user = rawData.user;
+    if (!data.createdDate) {
+      data.createdDate = Date.now();
+    }
+    const staffReport = await db.StaffReport.create({
+      userId: user.id,
+      ...data,
+    });
     return apiReturns.success(200, "Create Successfully", staffReport);
   } catch (error) {
     console.log(error.message);
