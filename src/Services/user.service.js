@@ -5,6 +5,18 @@ const db = require("../Models/index");
 const apiReturns = require("../Helpers/apiReturns.helper");
 const { renameKeyRedis } = require("./redis.service");
 const { hashPassword } = require("../Services/auth.service");
+const { initializeApp } = require("firebase/app");
+const { firebaseConfig } = require("../Configs/firebase.config");
+const {
+  getStorage,
+  ref,
+  getDownloadURL,
+  uploadBytesResumable,
+} = require("firebase/storage");
+
+initializeApp(firebaseConfig);
+
+const storage = getStorage();
 
 const getAllUserAccounts = async ({ page, limit, order, ...query }) => {
   try {
@@ -121,40 +133,14 @@ const deleteUserAccountById = async (rawData) => {
 
 const updateUserAccountById = async (rawData) => {
   try {
-    const { fullName, email, phoneNumber, userName, avatar } = rawData.body;
+    const { fullName, email, phoneNumber, userName } = rawData.body;
+    const file = rawData.file;
     const userId = rawData.params.userId;
-    // await db.sequelize.transaction(async (t) => {
-    //   const checkNewUser = await db.UserAccount.findOne(
-    //     {
-    //       where: { userName: userName },
-    //     },
-    //     { transaction: t }
-    //   );
-    //   if (checkNewUser) {
-    //     return apiReturns.validation("User name is already existed");
-    //   }
-    //   const oldUser = await db.UserAccount.findOne({
-    //     where: { id: userId },
-    //   });
-    //   await db.UserAccount.update(
-    //     {
-    //       userName: userName ? userName : oldUser.userName,
-    //       avatar: avatar ? avatar : oldUser.avatar,
-    //     },
-    //     {
-    //       where: {
-    //         id: userId,
-    //       },
-    //     },
-    //     { transaction: t }
-    //   );
-    // });
     let updatedInfo = {};
     let updatedAccount = {};
     if (fullName) updatedInfo.fullName = fullName;
     if (email) updatedInfo.email = email;
     if (phoneNumber) updatedInfo.phoneNumber = phoneNumber;
-    if (avatar) updatedAccount.avatar = avatar;
     if (userName) {
       const user = await db.UserAccount.findOne({
         where: { userName: userName },
@@ -162,15 +148,52 @@ const updateUserAccountById = async (rawData) => {
       if (user) {
         return apiReturns.validation("User name is already in use");
       }
-      renameKeyRedis({ oldKey: rawData.user.userName, newKey: userName });
       updatedAccount.userName = userName;
     }
-    await db.UserAccount.update(updatedAccount, { where: { id: userId } });
-    if (rawData.user.role.id === "1") {
-      await db.Passenger.update(updatedInfo, { where: { userId: userId } });
-    } else if (rawData.user.role.id === "2") {
-      await db.Staff.update(updatedInfo, { where: { userId: userId } });
+    if (file) {
+      const dateTime = new Date().toLocaleString("en-US", {
+        timeZone: "Asia/ho_chi_minh",
+      });
+      const storageRef = ref(
+        storage,
+        `images/${file.originalname + "       " + dateTime}`
+      );
+      const metaData = {
+        contentType: file.mimetype,
+        cacheControl: "public, max-age=31536000",
+      };
+      // Upload the file in the bucket storage
+      const snapshot = await uploadBytesResumable(
+        storageRef,
+        file.buffer,
+        metaData
+      );
+      const downloadURL = await getDownloadURL(snapshot.ref);
+      updatedAccount.avatar = downloadURL;
     }
+    await db.sequelize.transaction(async (t) => {
+      await db.UserAccount.update(
+        updatedAccount,
+        { where: { id: userId } },
+        { transaction: t }
+      );
+      if (rawData.user.role.id === "1") {
+        await db.Passenger.update(
+          updatedInfo,
+          { where: { userId: userId } },
+          { transaction: t }
+        );
+      } else if (rawData.user.role.id === "2") {
+        await db.Staff.update(
+          updatedInfo,
+          { where: { userId: userId } },
+          { transaction: t }
+        );
+      }
+      if (userName)
+        renameKeyRedis({ oldKey: rawData.user.userName, newKey: userName });
+    });
+
     return apiReturns.success(200, "Updated User Account Successfully");
   } catch (error) {
     console.log(error.message);

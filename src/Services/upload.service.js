@@ -8,7 +8,6 @@ const {
   getDownloadURL,
   uploadBytesResumable,
 } = require("firebase/storage");
-const FIREBASEPROJECTID = process.env.FIREBASEPROJECTID;
 
 initializeApp(firebaseConfig);
 
