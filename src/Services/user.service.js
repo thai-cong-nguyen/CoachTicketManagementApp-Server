@@ -53,34 +53,37 @@ const getAllUserAccounts = async ({ page, limit, order, ...query }) => {
 const getCurrentUserAccount = async (rawData) => {
   try {
     const userData = rawData.user;
-    const userAccount =
-      userData.role.id === 1
-        ? await db.Passenger.findOne({
-            where: {
-              userId: userData.id,
-            },
-            include: [
-              {
-                model: db.UserAccount,
-                as: "UserAccountData",
-                attributes: { exclude: ["password"] },
-              },
-            ],
-          })
-        : userData.role.id === 2
-        ? await db.Staff.findOne({
-            where: {
-              userId: userData.id,
-            },
-            include: [
-              {
-                model: db.UserAccount,
-                as: "UserAccountData",
-                attributes: { exclude: ["password"] },
-              },
-            ],
-          })
-        : await db.UserAccount.findByPk(userData.userId);
+    console.log(userData);
+    let userAccount = null;
+    if (userData.role.id === "1") {
+      userAccount = await db.Passenger.findOne({
+        where: {
+          userId: userData.userId,
+        },
+        include: [
+          {
+            model: db.UserAccount,
+            as: "UserAccountData",
+            attributes: { exclude: ["password"] },
+          },
+        ],
+      });
+    } else if (userData.role.id === "2") {
+      userAccount = await db.Staff.findOne({
+        where: {
+          userId: userData.userId,
+        },
+        include: [
+          {
+            model: db.UserAccount,
+            as: "UserAccountData",
+            attributes: { exclude: ["password"] },
+          },
+        ],
+      });
+    } else {
+      userAccount = await db.UserAccount.findByPk(userData.userId);
+    }
     return apiReturns.success(
       200,
       "Get Current UserAccount Successfully",
