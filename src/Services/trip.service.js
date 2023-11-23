@@ -1,11 +1,23 @@
 require("dotenv").config({ path: "../../.env" });
 const bcrypt = require("bcrypt");
-const { Op } = require("sequelize");
+const { Op, fn, col } = require("sequelize");
 const db = require("../Models/index");
 const apiReturns = require("../Helpers/apiReturns.helper");
 
-const getAllTrips = async ({ page, limit, order, from, to, ...query }) => {
+const getAllTrips = async ({
+  page,
+  limit,
+  order,
+  from,
+  to,
+  departureTime,
+  roundTime,
+  roundTrip,
+  seats,
+  ...query
+}) => {
   try {
+    // Queries for pagination and ordering when getting trips.
     const queries = {
       raw: true,
       nest: true,
@@ -16,8 +28,23 @@ const getAllTrips = async ({ page, limit, order, from, to, ...query }) => {
           : +page - 1 * (+limit || +process.env.PAGINATION_LIMIT),
       order: order || undefined,
     };
-    if (from) query["$StartPlaceData.placeName"] = from;
-    if (to) query["$ArrivalPlace.placeName"] = to;
+
+    // Add conditions for "from" and "to" places.
+    if (from) query["$StartPlaceData.placeName$"] = from;
+    if (to) query["$ArrivalPlace.placeName$"] = to;
+
+    // Add conditions for departure time (ignoring time).
+    if (departureTime)
+      query.departureTime = {
+        [Op.and]: [
+          fn("date", col("departureTime")),
+          {
+            [Op.eq]: new Date(departureTime),
+          },
+        ],
+      };
+
+    // Merging related table in db to search trips.
     const trips = await db.Schedule.findAndCountAll({
       where: query,
       ...queries,
@@ -56,20 +83,79 @@ const getAllTrips = async ({ page, limit, order, from, to, ...query }) => {
         },
       ],
     });
+
+    // Calculating the remaining slot seats for each trips.
     await Promise.all(
       trips.rows.map(async (data) => {
-        const reservations = await db.Reservation.findAndCountAll({
+        const countedReservations = await db.Reservation.count({
           where: {
             scheduleId: data.id,
           },
         });
-        const capacity = data.CoachData.capacity;
-        const remainingSlot = Math.max(0, capacity - reservations.count);
-        // reservations.count <= capacity ? capacity - reservations.count : 0;
+        const remainingSlot = Math.max(
+          0,
+          data.CoachData.capacity - countedReservations
+        );
         data.remainingSlot = remainingSlot;
       })
     );
-    return apiReturns.success(200, "Get Successfully", trips);
+
+    // Check if the remaining slots are still available for demanding passenger.
+    const tripsWithEnoughSeats = seats
+      ? trips.rows.filter((data) => data.remainingSlot >= seats)
+      : trips.rows;
+
+    // Check if the trip has round trips
+    const tripsWithRoundTrip = roundTrip
+      ? tripsWithEnoughSeats.filter(async (data) => {
+          const isRoundTrip = await db.Reservation.findOne({
+            where: {
+              "$StartPlaceData.placeName$": to,
+              "$EndPlaceData.placeName$": from,
+            },
+            include: [
+              {
+                model: db.Coach,
+                as: "CoachData",
+                include: [
+                  {
+                    model: db.CoachType,
+                    as: "CoachTypeData",
+                  },
+                ],
+              },
+              {
+                model: db.Route,
+                as: "RouteData",
+              },
+              {
+                model: db.Staff,
+                as: "DriverData",
+                attributes: ["id", "fullName", "phoneNumber", "gender"],
+              },
+              {
+                model: db.Staff,
+                as: "CoachAssistantData",
+                attributes: ["id", "fullName", "phoneNumber", "gender"],
+              },
+              {
+                model: db.Places,
+                as: "StartPlaceData",
+              },
+              {
+                model: db.Places,
+                as: "ArrivalPlaceData",
+              },
+            ],
+          });
+          return isRoundTrip;
+        })
+      : tripsWithEnoughSeats;
+
+    return apiReturns.success(200, "Get Successfully", {
+      count: trips.count,
+      rows: tripsWithRoundTrip,
+    });
   } catch (error) {
     console.error(error.message);
     return apiReturns.error(400, error.message);
