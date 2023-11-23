@@ -4,14 +4,20 @@ const { Op } = require("sequelize");
 const db = require("../Models/index");
 const apiReturns = require("../Helpers/apiReturns.helper");
 
-const getAllTrips = async ({ page, limit, order, ...query }) => {
+const getAllTrips = async ({ page, limit, order, from, to, ...query }) => {
   try {
-    const queries = { raw: true, nest: true };
-    const offset = !page || +page <= 1 ? 0 : +page - 1;
-    const flimit = +limit || +process.env.PAGINATION_LIMIT;
-    queries.offset = offset * flimit;
-    queries.limit = flimit;
-    if (order) queries.order = order;
+    const queries = {
+      raw: true,
+      nest: true,
+      limit: +limit || +process.env.PAGINATION_LIMIT,
+      offset:
+        !page || +page <= 1
+          ? 0
+          : +page - 1 * (+limit || +process.env.PAGINATION_LIMIT),
+      order: order || undefined,
+    };
+    if (from) query["$StartPlaceData.placeName"] = from;
+    if (to) query["$ArrivalPlace.placeName"] = to;
     const trips = await db.Schedule.findAndCountAll({
       where: query,
       ...queries,
@@ -57,10 +63,9 @@ const getAllTrips = async ({ page, limit, order, ...query }) => {
             scheduleId: data.id,
           },
         });
-        console.log(reservations);
         const capacity = data.CoachData.capacity;
-        const remainingSlot =
-          reservations.count <= capacity ? capacity - reservations.count : 0;
+        const remainingSlot = Math.max(0, capacity - reservations.count);
+        // reservations.count <= capacity ? capacity - reservations.count : 0;
         data.remainingSlot = remainingSlot;
       })
     );
