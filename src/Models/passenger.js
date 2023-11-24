@@ -14,6 +14,8 @@ module.exports = (sequelize, DataTypes) => {
         targetKey: "id",
         as: "UserAccountData",
       });
+      // has many
+      Passenger.hasMany(models.Reservation, { onDelete: "CASCADE" });
     }
   }
   Passenger.init(

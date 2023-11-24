@@ -9,6 +9,8 @@ module.exports = (sequelize, DataTypes) => {
      */
     static associate(models) {
       // define association here
+      // has many
+      Service.hasMany(models.CoachService, { onDelete: "CASCADE" });
     }
   }
   Service.init(

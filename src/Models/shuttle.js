@@ -39,6 +39,8 @@ module.exports = (sequelize, DataTypes) => {
         targetKey: "id",
         as: "ArrivalPlaceData",
       });
+      // has many
+      Shuttle.hasMany(models.ShuttleRoutes, { onDelete: "CASCADE" });
     }
   }
   Shuttle.init(

@@ -83,79 +83,87 @@ const getAllTrips = async ({
         },
       ],
     });
-
-    // Calculating the remaining slot seats for each trips.
-    await Promise.all(
-      trips.rows.map(async (data) => {
-        const countedReservations = await db.Reservation.count({
-          where: {
-            scheduleId: data.id,
-          },
-        });
-        const remainingSlot = Math.max(
-          0,
-          data.CoachData.capacity - countedReservations
-        );
-        data.remainingSlot = remainingSlot;
-      })
-    );
-
-    // Check if the remaining slots are still available for demanding passenger.
-    const tripsWithEnoughSeats = seats
-      ? trips.rows.filter((data) => data.remainingSlot >= seats)
-      : trips.rows;
-
-    // Check if the trip has round trips
-    const tripsWithRoundTrip = roundTrip
-      ? tripsWithEnoughSeats.filter(async (data) => {
-          const isRoundTrip = await db.Reservation.findOne({
+    let resultGetTrips = null;
+    if (trips.count > 0) {
+      // Calculating the remaining slot seats for each trips.
+      await Promise.all(
+        trips.rows.map(async (data) => {
+          const countedReservations = await db.Reservation.count({
             where: {
-              "$StartPlaceData.placeName$": to,
-              "$EndPlaceData.placeName$": from,
+              scheduleId: data.id,
             },
-            include: [
-              {
-                model: db.Coach,
-                as: "CoachData",
-                include: [
-                  {
-                    model: db.CoachType,
-                    as: "CoachTypeData",
-                  },
-                ],
-              },
-              {
-                model: db.Route,
-                as: "RouteData",
-              },
-              {
-                model: db.Staff,
-                as: "DriverData",
-                attributes: ["id", "fullName", "phoneNumber", "gender"],
-              },
-              {
-                model: db.Staff,
-                as: "CoachAssistantData",
-                attributes: ["id", "fullName", "phoneNumber", "gender"],
-              },
-              {
-                model: db.Places,
-                as: "StartPlaceData",
-              },
-              {
-                model: db.Places,
-                as: "ArrivalPlaceData",
-              },
-            ],
           });
-          return isRoundTrip;
+          const remainingSlot = Math.max(
+            0,
+            data.CoachData.capacity - countedReservations
+          );
+          data.remainingSlot = remainingSlot;
         })
-      : tripsWithEnoughSeats;
+      );
 
-    return apiReturns.success(200, "Get Successfully", {
-      count: trips.count,
-      rows: tripsWithRoundTrip,
-    });
+      // Check if the remaining slots are still available for demanding passenger.
+      const tripsWithEnoughSeats = seats
+        ? trips.rows.filter((data) => data.remainingSlot >= seats)
+        : trips.rows;
+
+      // Check if the trip has round trips
+      resultGetTrips = roundTrip
+        ? tripsWithEnoughSeats.filter(async (data) => {
+            const isRoundTrip = await db.Reservation.findOne({
+              where: {
+                "$StartPlaceData.placeName$": to,
+                "$EndPlaceData.placeName$": from,
+              },
+              include: [
+                {
+                  model: db.Coach,
+                  as: "CoachData",
+                  include: [
+                    {
+                      model: db.CoachType,
+                      as: "CoachTypeData",
+                    },
+                  ],
+                },
+                {
+                  model: db.Route,
+                  as: "RouteData",
+                },
+                {
+                  model: db.Staff,
+                  as: "DriverData",
+                  attributes: ["id", "fullName", "phoneNumber", "gender"],
+                },
+                {
+                  model: db.Staff,
+                  as: "CoachAssistantData",
+                  attributes: ["id", "fullName", "phoneNumber", "gender"],
+                },
+                {
+                  model: db.Places,
+                  as: "StartPlaceData",
+                },
+                {
+                  model: db.Places,
+                  as: "ArrivalPlaceData",
+                },
+              ],
+            });
+            return isRoundTrip;
+          })
+        : tripsWithEnoughSeats;
+    }
+
+    return apiReturns.success(
+      200,
+      "Get Successfully",
+      resultGetTrips
+        ? {
+            count: trips.count,
+            rows: resultGetTrips,
+          }
+        : {}
+    );
   } catch (error) {
     console.error(error.message);
     return apiReturns.error(400, error.message);
