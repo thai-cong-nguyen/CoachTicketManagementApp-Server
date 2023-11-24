@@ -39,6 +39,11 @@ module.exports = (sequelize, DataTypes) => {
         targetKey: "id",
         as: "ArrivalPlaceData",
       });
+      // has many
+      Schedule.hasMany(models.Reservation, { onDelete: "CASCADE" });
+      Schedule.hasMany(models.StaffReport, { onDelete: "CASCADE" });
+      Schedule.hasMany(models.Rating, { onDelete: "CASCADE" });
+      Schedule.hasMany(models.Shuttle, { onDelete: "CASCADE" });
     }
   }
   Schedule.init(

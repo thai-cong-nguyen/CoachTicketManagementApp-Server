@@ -9,6 +9,9 @@ module.exports = (sequelize, DataTypes) => {
      */
     static associate(models) {
       // define association here
+      // has many
+      Route.hasMany(models.Places, { onDelete: "CASCADE" });
+      Route.hasMany(models.Schedule, { onDelete: "CASCADE" });
     }
   }
   Route.init(
