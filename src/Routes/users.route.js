@@ -7,6 +7,7 @@ const {
   deleteUserAccountByIdController,
   updateUserAccountController,
   changePasswordCurrentUserAccountController,
+  updateRewardPointController,
 } = require("../Controllers/userAccount.controller");
 const { verifyJWT } = require("../Middlewares/JWT.middleware");
 const {
@@ -26,7 +27,7 @@ router.post(
   changePasswordCurrentUserAccountController
 );
 router.patch("/:userId", upload.single("image"), updateUserAccountController);
-
+router.patch("/updateRewardPoint/:userId", updateRewardPointController);
 // Admin permission
 router.use(isAdmin);
 router.get("/", getAllUserAccountsController);

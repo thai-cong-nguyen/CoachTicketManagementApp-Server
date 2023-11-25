@@ -228,10 +228,37 @@ const changePasswordCurrentUserAccount = async (rawData) => {
   }
 };
 
+const updateRewardPoint = async (rawData) => {
+  return new Promise(async (resolve, reject) => {
+    try {
+      const changedPoint = rawData.body.point;
+      const userId = rawData.params.userId;
+      const userAccount = await db.UserAccount.findByPk(userId);
+      // Different current user and not be admin user
+      if (userId !== rawData.user.userId && userAccount.roleId !== "3") {
+        reject(apiReturns.error(400, "Can not have permission"));
+      }
+      await db.sequelize.transaction(async (t) => {
+        userAccount.rewardPoint + changedPoint >= 0
+          ? await db.UserAccount.update(
+              { rewardPoint: userAccount.rewardPoint + changedPoint },
+              { where: { id: userId } },
+              { transaction: t }
+            )
+          : reject(apiReturns.error(400, "Not have enough reward points"));
+      });
+      resolve(apiReturns.success(200, "Change Reward Point Successfully"));
+    } catch (error) {
+      reject(apiReturns.error(500, error.message));
+    }
+  });
+};
+
 module.exports = {
   getAllUserAccounts,
   getCurrentUserAccount,
   deleteUserAccountById,
   updateUserAccountById,
   changePasswordCurrentUserAccount,
+  updateRewardPoint,
 };
