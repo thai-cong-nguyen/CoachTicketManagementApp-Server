@@ -8,6 +8,7 @@ const { configMiddleware } = require("./src/Configs/viewMiddleware.config");
 const { initWebRoutes } = require("./src/Routes/initWeb.route");
 const apiWebRoutes = require("./src/Routes/api.route");
 const { connectDB } = require("./src/Configs/connectDB.config");
+const { connectRedis } = require("./src/Configs/connectRedis.config");
 
 const port = process.env.PORT || 3000;
 
@@ -20,6 +21,9 @@ apiWebRoutes(app);
 
 // Connect database
 connectDB();
+
+// Connect Redis
+connectRedis();
 
 app.listen(port, () => {
   console.log("Server listening on port " + port);
