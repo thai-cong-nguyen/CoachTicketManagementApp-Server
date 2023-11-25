@@ -9,8 +9,8 @@ module.exports = (sequelize, DataTypes) => {
      */
     static associate(models) {
       // define association here
-      Discount.hasMany(models.Reservation, { onDelete: "CASCADE" });
-      Discount.hasMany(models.UserDiscount, { onDelete: "CASCADE" });
+      // Discount.hasMany(models.Reservation, { onDelete: "CASCADE" });
+      // Discount.hasMany(models.UserDiscount, { onDelete: "CASCADE" });
     }
   }
   Discount.init(

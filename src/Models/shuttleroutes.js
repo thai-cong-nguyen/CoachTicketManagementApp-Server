@@ -20,7 +20,7 @@ module.exports = (sequelize, DataTypes) => {
         as: "DeparturePlaceData",
       });
       // has many
-      ShuttleRoutes.hasMany(models.ShuttlePassengers, { onDelete: "CASCADE" });
+      // ShuttleRoutes.hasMany(models.ShuttlePassengers, { onDelete: "CASCADE" });
     }
   }
   ShuttleRoutes.init(

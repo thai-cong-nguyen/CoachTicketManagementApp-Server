@@ -186,7 +186,7 @@ const fillTicketInfo = async (rawData) => {
     return apiReturns.error(400, error.message);
   }
 };
-//
+
 const changeSeatTicket = async (rawData) => {
   try {
     const data = rawData.body;
@@ -240,6 +240,38 @@ const chooseSeatTicket = async (rawData) => {
   }
 };
 
+const bookingTicket = async (rawData) => {
+  return new Promise(async (resolve, reject) => {
+    try {
+      // data get from request's body && response for client.
+      const data = rawData.body;
+
+      const transaction = await db.sequelize.transaction(async (t) => {
+        let res = [];
+        // fill passenger detail for ticket.
+        await Promise.all(
+          data.forEach(async (e) => {
+            const passenger = await db.Passenger.findOrCreate({
+              where: { phoneNumber: e.phoneNumber },
+              default: e.passenger,
+            });
+            const reservation = await db.Reservation.update(
+              { passengerId: passenger.id },
+              { where: { id: e.id } }
+            );
+            res.push({ passenger, reservation });
+          })
+        );
+        // processing for booking.
+      });
+
+      resolve(apiReturns.success(200, "Booked Ticket Successfully"));
+    } catch (error) {
+      reject(error);
+    }
+  });
+};
+
 module.exports = {
   getAllTickets,
   fillTicketInfo,
@@ -247,4 +279,5 @@ module.exports = {
   changeSeatTicket,
   getAllTicketsOfUsers,
   getUserTicketsHistory,
+  bookingTicket,
 };

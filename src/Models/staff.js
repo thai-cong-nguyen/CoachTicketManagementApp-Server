@@ -15,9 +15,9 @@ module.exports = (sequelize, DataTypes) => {
         as: "UserAccountData",
       });
       // has many
-      Staff.hasMany(models.StaffReport, { onDelete: "CASCADE" });
-      Staff.hasMany(models.Shuttle, { onDelete: "CASCADE" });
-      Staff.hasMany(models.Schedule, { onDelete: "CASCADE" });
+      // Staff.hasMany(models.StaffReport, { onDelete: "CASCADE" });
+      // Staff.hasMany(models.Shuttle, { onDelete: "CASCADE" });
+      // Staff.hasMany(models.Schedule, { onDelete: "CASCADE" });
     }
   }
   Staff.init(

@@ -15,10 +15,10 @@ module.exports = (sequelize, DataTypes) => {
         as: "RouteData",
       });
       // has many
-      Places.hasMany(models.Shuttle, { onDelete: "CASCADE" });
-      Places.hasMany(models.ShuttleRoutes, { onDelete: "CASCADE" });
-      Places.hasMany(models.Schedule, { onDelete: "CASCADE" });
-      Places.hasMany(models.Reservation, { onDelete: "CASCADE" });
+      // Places.hasMany(models.Shuttle, { onDelete: "CASCADE" });
+      // Places.hasMany(models.ShuttleRoutes, { onDelete: "CASCADE" });
+      // Places.hasMany(models.Schedule, { onDelete: "CASCADE" });
+      // Places.hasMany(models.Reservation, { onDelete: "CASCADE" });
     }
   }
   Places.init(
