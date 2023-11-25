@@ -10,7 +10,7 @@ module.exports = (sequelize, DataTypes) => {
     static associate(models) {
       // define association here
       // has many
-      Position.hasMany(models.Staff, { onDelete: "CASCADE" });
+      // Position.hasMany(models.Staff, { onDelete: "CASCADE" });
     }
   }
   Position.init(

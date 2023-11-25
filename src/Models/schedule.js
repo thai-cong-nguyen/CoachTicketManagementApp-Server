@@ -40,10 +40,10 @@ module.exports = (sequelize, DataTypes) => {
         as: "ArrivalPlaceData",
       });
       // has many
-      Schedule.hasMany(models.Reservation, { onDelete: "CASCADE" });
-      Schedule.hasMany(models.StaffReport, { onDelete: "CASCADE" });
-      Schedule.hasMany(models.Rating, { onDelete: "CASCADE" });
-      Schedule.hasMany(models.Shuttle, { onDelete: "CASCADE" });
+      // Schedule.hasMany(models.Reservation, { onDelete: "CASCADE" });
+      // Schedule.hasMany(models.StaffReport, { onDelete: "CASCADE" });
+      // Schedule.hasMany(models.Rating, { onDelete: "CASCADE" });
+      // Schedule.hasMany(models.Shuttle, { onDelete: "CASCADE" });
     }
   }
   Schedule.init(

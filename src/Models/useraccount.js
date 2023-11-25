@@ -20,7 +20,7 @@ module.exports = (sequelize, DataTypes) => {
         as: "MemberShipData",
       });
       // Has many
-      UserAccount.hasMany(models.AppReport, { onDelete: "CASCADE" });
+      // UserAccount.hasMany(models.AppReport, { onDelete: "CASCADE" });
     }
   }
   UserAccount.init(

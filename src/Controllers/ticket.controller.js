@@ -5,6 +5,7 @@ const {
   chooseSeatTicket,
   getAllTicketsOfUsers,
   getUserTicketsHistory,
+  bookingTicket,
 } = require("../Services/ticket.service");
 
 exports.getAllTicketsController = async (req, res) => {
@@ -63,6 +64,16 @@ exports.getUserTicketsHistoryController = async (req, res, next) => {
   try {
     const query = req.query;
     const response = await getUserTicketsHistory(query);
+    return res.status(response.code).send(response);
+  } catch (error) {
+    console.error(error.message);
+    return res.status(404).send("Something went wrong");
+  }
+};
+
+exports.bookingTicketController = async (req, res, next) => {
+  try {
+    const response = await bookingTicket(req);
     return res.status(response.code).send(response);
   } catch (error) {
     console.error(error.message);
