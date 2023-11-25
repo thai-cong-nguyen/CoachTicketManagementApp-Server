@@ -133,7 +133,8 @@ const deleteUserAccountById = async (rawData) => {
 
 const updateUserAccountById = async (rawData) => {
   try {
-    const { fullName, email, phoneNumber, userName } = rawData.body;
+    const { fullName, email, phoneNumber, userName, address, positionId } =
+      rawData.body;
     const file = rawData.file;
     const userId = rawData.params.userId;
     let updatedInfo = {};
@@ -141,6 +142,7 @@ const updateUserAccountById = async (rawData) => {
     if (fullName) updatedInfo.fullName = fullName;
     if (email) updatedInfo.email = email;
     if (phoneNumber) updatedInfo.phoneNumber = phoneNumber;
+    if (address) updatedInfo.address = address;
     if (userName) {
       const user = await db.UserAccount.findOne({
         where: { userName: userName },
@@ -150,6 +152,8 @@ const updateUserAccountById = async (rawData) => {
       }
       updatedAccount.userName = userName;
     }
+
+    // update avatar user account
     if (file) {
       const dateTime = new Date().toLocaleString("en-US", {
         timeZone: "Asia/ho_chi_minh",
@@ -184,6 +188,7 @@ const updateUserAccountById = async (rawData) => {
           { transaction: t }
         );
       } else if (rawData.user.role.id === "2") {
+        if (positionId) updatedInfo.positionId = positionId;
         await db.Staff.update(
           updatedInfo,
           { where: { userId: userId } },
