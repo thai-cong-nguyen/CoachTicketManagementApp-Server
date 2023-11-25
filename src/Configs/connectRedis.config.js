@@ -8,7 +8,16 @@ const client = redis.createClient({
   url: `redis://default:${REDIS_PASSWORD}@${REDIS_HOST}:${REDIS_PORT}`,
 });
 
-client.on("error", (err) => {
+client.on("error", async (err) => {
   console.log("Error: ", err.message);
 });
-module.exports = client;
+
+const connectRedis = async () => {
+  await client.connect();
+};
+
+const disconnectRedis = async () => {
+  await client.disconnect();
+};
+
+module.exports = { client, connectRedis, disconnectRedis };

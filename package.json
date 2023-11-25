@@ -36,6 +36,7 @@
     "uuid-v4": "^0.1.0"
   },
   "devDependencies": {
-    "sequelize-cli": "^6.6.2"
+    "sequelize-cli": "^6.6.2",
+    "util": "^0.12.5"
   }
 }
