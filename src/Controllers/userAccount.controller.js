@@ -5,6 +5,7 @@ const {
   updateUserAccountById,
   changePasswordCurrentUserAccount,
   resetPassword,
+  updateRewardPoint,
 } = require("../Services/user.service");
 const { isEmptyObject } = require("../Helpers/checking.helper");
 
@@ -62,6 +63,16 @@ exports.changePasswordCurrentUserAccountController = async (req, res, next) => {
 exports.resetPasswordController = async (req, res, next) => {
   try {
     const response = await resetPassword(req);
+    return res.status(response.code).send(response);
+  } catch (error) {
+    console.error(error);
+    return res.status(500).send("Something went wrong");
+  }
+};
+
+exports.updateRewardPointController = async (req, res, next) => {
+  try {
+    const response = await updateRewardPoint(req);
     return res.status(response.code).send(response);
   } catch (error) {
     console.error(error);
