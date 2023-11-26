@@ -135,7 +135,7 @@ const updateUserAccountById = async (rawData) => {
   try {
     const { fullName, email, phoneNumber, userName, address, positionId } =
       rawData.body;
-    const file = rawData.file;
+    const file = await rawData.file;
     const userId = rawData.params.userId;
     let updatedInfo = {};
     let updatedAccount = {};
@@ -152,7 +152,6 @@ const updateUserAccountById = async (rawData) => {
       }
       updatedAccount.userName = userName;
     }
-
     // update avatar user account
     if (file) {
       const dateTime = new Date().toLocaleString("en-US", {
