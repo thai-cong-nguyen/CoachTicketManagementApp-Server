@@ -22,4 +22,14 @@ const getRolesUser = async (roleId) => {
   return roleOfUser ? roleOfUser : null;
 };
 
-module.exports = { createJWT, getRolesUser };
+const getPositionsStaff = async (positionId) => {
+  const positionOfStaff = await db.Position.findOne({
+    where: {
+      id: positionId,
+    },
+    attributes: ["id", "positionName"],
+  });
+  return positionOfStaff ? positionOfStaff : null;
+};
+
+module.exports = { createJWT, getRolesUser, getPositionsStaff };

@@ -8,7 +8,14 @@ const { deleteRatingById } = require("./rating.service");
 const { deleteShuttleById } = require("./shuttle.service");
 const { deleteStaffReportById } = require("./staffReport.service");
 
-const getAllSchedules = async ({ page, limit, order, ...query }) => {
+const getAllSchedules = async ({
+  page,
+  limit,
+  order,
+  startPlaceName,
+  arrivalPlaceName,
+  ...query
+}) => {
   try {
     const queries = { raw: true, nest: true };
     const offset = !page || +page <= 1 ? 0 : +page - 1;
@@ -16,9 +23,38 @@ const getAllSchedules = async ({ page, limit, order, ...query }) => {
     queries.offset = offset * flimit;
     queries.limit = flimit;
     if (order) queries.order = order;
+    if (startPlaceName) query["$StartPlaceData.placeName$"] = startPlaceName;
+    if (arrivalPlaceName)
+      query["$ArrivalPlaceData.placeName$"] = arrivalPlaceName;
     const schedules = await db.Schedule.findAndCountAll({
       where: query,
       ...queries,
+      include: [
+        {
+          model: db.Coach,
+          as: "CoachData",
+        },
+        {
+          model: db.Route,
+          as: "RouteData",
+        },
+        {
+          model: db.Staff,
+          as: "DriverData",
+        },
+        {
+          model: db.Staff,
+          as: "CoachAssistantData",
+        },
+        {
+          model: db.Places,
+          as: "StartPlaceData",
+        },
+        {
+          model: db.Places,
+          as: "ArrivalPlaceData",
+        },
+      ],
     });
     return apiReturns.success(200, "Get Schedules Successfully", schedules);
   } catch (error) {

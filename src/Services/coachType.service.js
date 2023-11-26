@@ -44,4 +44,5 @@ const getAllCoachTypes = async ({ page, limit, order, ...query }) => {
     return apiReturns.error(400, error.message);
   }
 };
+
 module.exports = { createNewCoachType, getAllCoachTypes };

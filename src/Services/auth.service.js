@@ -2,7 +2,7 @@ require("dotenv").config({ path: "../../.env" });
 const bcrypt = require("bcrypt");
 const db = require("../Models/index");
 const apiReturns = require("../Helpers/apiReturns.helper");
-const { getRolesUser } = require("../Services/jwt.service");
+const { getRolesUser, getPositionsStaff } = require("../Services/jwt.service");
 const { createJWT } = require("../Services/jwt.service");
 const { notAuthError } = require("../Middlewares/handleErrors.middleware");
 const { setRedis, getRedis, delRedis } = require("../Services/redis.service");
@@ -13,9 +13,6 @@ const JWT_SECRET_REFRESH_TOKEN = process.env.JWT_SECRET_REFRESH_TOKEN;
 const JWT_EXPIRES_IN_ACCESS_TOKEN = process.env.JWT_EXPIRES_IN_ACCESS_TOKEN;
 const JWT_EXPIRES_IN_REFRESH_TOKEN = process.env.JWT_EXPIRES_IN_REFRESH_TOKEN;
 const salt = bcrypt.genSaltSync(10);
-
-const defaultAvatar =
-  "https://static2.yan.vn/YanNews/2167221/202102/facebook-cap-nhat-avatar-doi-voi-tai-khoan-khong-su-dung-anh-dai-dien-e4abd14d.jpg";
 
 const hashPassword = (password) => {
   return new Promise(async (resolve, reject) => {
@@ -118,7 +115,7 @@ const registerNewUserAccount = async (rawData) => {
         {
           userName: data.userName,
           password: hashPasswordFromBcrypt,
-          avatar: data.avatar ? data.avatar : defaultAvatar,
+          avatar: data.avatar,
           roleId: roleId,
           memberShipId: data.memberShipId ? data.memberShipId : "1",
           rewardPoint: data.rewardPoint ? data.rewardPoint : 0,
@@ -170,11 +167,12 @@ const loginUserAccount = async (rawData, res) => {
   try {
     const data = rawData.body;
     let userId = null;
-    let username = null;
+    let userName = null;
     let password = null;
     let roleId = null;
+    let positionId = null;
     if (data.userName) {
-      // Check login with username
+      // Check login with userName
       const user = await db.UserAccount.findOne({
         where: { userName: data.userName },
       });
@@ -182,41 +180,76 @@ const loginUserAccount = async (rawData, res) => {
         return apiReturns.validation("User account does not exist");
       }
       userId = user.id;
-      username = user.userName;
+      userName = user.userName;
       password = user.password;
       roleId = user.roleId;
-    } else if (data.email || data.phoneNumber) {
+      if (roleId === "2") {
+        const info = await db.Staff.findOne({
+          where: { userId: userId },
+          include: [
+            {
+              model: db.Position,
+              as: "PositionData",
+            },
+          ],
+        });
+        positionId = info.dataValues.positionId;
+      }
+    } else if (data.phoneNumber) {
       // Check login with email & phoneNumber
       const phoneNumber = data.phoneNumber ? data.phoneNumber : null;
-      const email = data.email ? data.email : null;
-      const passenger = await (email
-        ? await db.Passenger.findOne({
-            where: { email: email },
-            include: [
-              {
-                model: db.UserAccount,
-                as: "UserAccountData",
-              },
-            ],
-          })
-        : await db.Passenger.findOne({
-            where: { phoneNumber: phoneNumber },
-            include: [
-              {
-                model: db.UserAccount,
-                as: "UserAccountData",
-              },
-            ],
-          }));
-      if (passenger) {
-        userId = await passenger.dataValues.UserAccountData.id;
-        username = await passenger.dataValues.UserAccountData.userName;
-        password = await passenger.dataValues.UserAccountData.password;
-        roleId = await passenger.dataValues.UserAccountData.roleId;
+      // const email = data.email ? data.email : null;
+      // const passenger = await (email
+      //   ? await db.Passenger.findOne({
+      //       where: { email: email },
+      //       include: [
+      //         {
+      //           model: db.UserAccount,
+      //           as: "UserAccountData",
+      //         },
+      //       ],
+      //     })
+      //   : await db.Passenger.findOne({
+      //       where: { phoneNumber: phoneNumber },
+      //       include: [
+      //         {
+      //           model: db.UserAccount,
+      //           as: "UserAccountData",
+      //         },
+      //       ],
+      //     }));
+      const info =
+        (await db.Passenger.findOne({
+          where: { phoneNumber: phoneNumber },
+          include: [
+            {
+              model: db.UserAccount,
+              as: "UserAccountData",
+            },
+          ],
+        })) ||
+        (await db.Staff.findOne({
+          where: { phoneNumber: phoneNumber },
+          include: [
+            {
+              model: db.UserAccount,
+              as: "UserAccountData",
+            },
+            {
+              model: db.Position,
+              as: "PositionData",
+            },
+          ],
+        }));
+      if (info) {
+        userId = await info.dataValues.UserAccountData.id;
+        userName = await info.dataValues.UserAccountData.userName;
+        password = await info.dataValues.UserAccountData.password;
+        roleId = await info.dataValues.UserAccountData.roleId;
+        if (roleId === "2")
+          positionId = await info.dataValues.UserAccountData.positionId;
       } else {
-        return apiReturns.validation(
-          "Email or Phone Number is not already existed"
-        );
+        return apiReturns.validation("Phone Number is not already existed");
       }
     } else {
       return apiReturns.validation("Something went wrong");
@@ -229,18 +262,20 @@ const loginUserAccount = async (rawData, res) => {
     const roleUser = await getRolesUser(roleId);
     const payload = {
       userId: userId,
-      userName: username,
+      userName: userName,
       role: roleUser.dataValues,
     };
-    const refreshToken = createJWT(
-      payload,
-      JWT_SECRET_REFRESH_TOKEN,
-      JWT_EXPIRES_IN_REFRESH_TOKEN
-    );
+    if (positionId) payload.position = await getPositionsStaff(positionId);
     const accessToken = createJWT(
       payload,
       JWT_SECRET_ACCESS_TOKEN,
       JWT_EXPIRES_IN_ACCESS_TOKEN
+    );
+    // const refreshTokenInRedis = await getRedis(user)
+    const refreshToken = createJWT(
+      payload,
+      JWT_SECRET_REFRESH_TOKEN,
+      JWT_EXPIRES_IN_REFRESH_TOKEN
     );
     res.cookie("refreshToken", `Bearer ${refreshToken}`, {
       httpOnly: true,
@@ -248,7 +283,7 @@ const loginUserAccount = async (rawData, res) => {
       sameSite: "strict",
     });
     await setRedis({
-      key: username,
+      key: userName,
       value: JSON.stringify(refreshToken),
     });
     return apiReturns.success(200, "Login Successfully", {
@@ -284,6 +319,7 @@ const requestRefreshToken = async (rawData, res) => {
           userId: decoded.userId,
           userName: decoded.userName,
           role: decoded.role,
+          position: decoded.position,
         };
         newAccessToken = createJWT(
           payload,
@@ -318,11 +354,12 @@ const requestRefreshToken = async (rawData, res) => {
 const logoutAccount = async (rawData, res) => {
   try {
     res.clearCookie("refreshToken");
+    // const userName = rawData.
     await delRedis(rawData.body.userName);
     return apiReturns.success(200, "Logged Out!");
   } catch (error) {
     console.log(error);
-    return apiReturns.error(500, "Some thing went wrong");
+    return apiReturns.error(500, "Something went wrong");
   }
 };
 

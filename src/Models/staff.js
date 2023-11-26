@@ -14,6 +14,11 @@ module.exports = (sequelize, DataTypes) => {
         targetKey: "id",
         as: "UserAccountData",
       });
+      Staff.belongsTo(models.Position, {
+        foreignKey: "positionId",
+        targetKey: "id",
+        as: "PositionData",
+      });
       // has many
       // Staff.hasMany(models.StaffReport, { onDelete: "CASCADE" });
       // Staff.hasMany(models.Shuttle, { onDelete: "CASCADE" });
