@@ -6,6 +6,7 @@ const apiReturns = require("../Helpers/apiReturns.helper");
 const { arraysAreEqual } = require("../Utils/compare.util");
 
 const getTickets = async ({ queries, reservationId, ...query }) => {
+  console.log(query);
   const reservations = await db.Reservation.findAndCountAll({
     where: query,
     ...queries,
@@ -96,9 +97,11 @@ const getTickets = async ({ queries, reservationId, ...query }) => {
     }
     return acc;
   }, []);
-  const result = tickets.rows.filter((ticket) =>
-    arraysAreEqual(ticket.reservationId, reservationId)
-  );
+  const result = reservationId
+    ? tickets.filter((ticket) =>
+        arraysAreEqual(ticket.reservationId, reservationId)
+      )
+    : tickets;
   return result;
 };
 
@@ -118,7 +121,6 @@ const getAllTickets = async ({
     queries.limit = flimit;
     if (order) queries.order = order;
     if (userId) queries.userId = userId;
-
     const tickets = await getTickets({ queries, reservationId, ...query });
     return apiReturns.success(200, "Get Successfully", tickets);
   } catch (error) {
@@ -137,11 +139,15 @@ const getAllTicketsOfUsers = async ({ page, limit, order, userId }) => {
     if (order) queries.order = order;
     queries.userId = userId;
     const currentTickets = await getTickets({ queries, status: "3" });
-    const historyTickets = await getTickets({ queries, [Op.notIn]: ["3"] });
+    const historyTickets = await getTickets({
+      queries,
+      status: { [Op.notIn]: ["3"] },
+    });
+    console.log(historyTickets);
     const res = { current: currentTickets, history: historyTickets };
     return apiReturns.success(200, "Get Successfully", res);
   } catch (error) {
-    console.error(error.message);
+    console.error(error);
     return apiReturns.error(400, error.message);
   }
 };
