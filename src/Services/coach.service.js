@@ -12,7 +12,6 @@ module.exports = {
     try {
       const { services, typeDetails, ...data } = rawData.body;
       const coach = await db.Coach.create(data);
-
       if (data.services) {
         await Promise.all(
           data.services.map(async (service) => {
