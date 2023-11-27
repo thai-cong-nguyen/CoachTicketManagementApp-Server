@@ -46,6 +46,7 @@ const removeServiceOutOfCoach = async ({ coachId, serviceId }) => {
   try {
     const coachType = await db.CoachService.findOne({
       where: { coachId: coachId, serviceId: serviceId },
+      attributes: ["id", "coachId", "serviceId"],
     });
     if (!coachType) return apiReturns.error(404, "Coach have not this service");
     await db.CoachService.destroy({ where: { id: coachType.id } });
@@ -58,18 +59,19 @@ const removeServiceOutOfCoach = async ({ coachId, serviceId }) => {
 
 const addServiceForCoach = async ({ coachId, serviceId }) => {
   try {
-    const [coachService, created] = await db.CoachService.findOrCreate({
+    const existingCoachService = await db.CoachService.findOne({
       where: {
         coachId: coachId,
         serviceId: serviceId,
       },
-      defaults: {
-        coachId: coachId,
-        serviceId: serviceId,
-      },
     });
-    if (!created)
+    if (existingCoachService) {
       return apiReturns.error(409, "Service is available for this Coach");
+    }
+    const coachService = await db.CoachService.create({
+      coachId: coachId,
+      serviceId: serviceId,
+    });
     return apiReturns.success(
       200,
       "Added Service for this Coach",
