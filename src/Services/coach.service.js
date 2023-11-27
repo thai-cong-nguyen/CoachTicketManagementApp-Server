@@ -3,7 +3,6 @@ const bcrypt = require("bcrypt");
 const { Op } = require("sequelize");
 const db = require("../Models/index");
 const apiReturns = require("../Helpers/apiReturns.helper");
-const { deleteCoachServiceById } = require("./coachService.service");
 const { deleteScheduleById } = require("./schedule.service");
 const { deleteShuttlesById } = require("./shuttle.service");
 
