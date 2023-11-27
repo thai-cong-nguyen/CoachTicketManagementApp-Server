@@ -25,7 +25,7 @@ router.get("/customer/schedule", getStatisticCustomersByScheduleController);
 router.get("/customer/months/", getStatisticCustomersByMonthsController);
 router.get("/customer/years/", getStatisticCustomersByYearsController);
 router.get("/revenue/schedule", getStatisticsRevenueByScheduleController);
-router.get("/customers/months", getStatisticsRevenueByMonthsController);
-router.get("/customers/years", getStatisticsRevenueByYearsController);
+router.get("/revenue/months", getStatisticsRevenueByMonthsController);
+router.get("/revenue/years", getStatisticsRevenueByYearsController);
 
 module.exports = router;

@@ -19,7 +19,7 @@ exports.getStatisticCustomersByScheduleController = async (req, res) => {
 
 exports.getStatisticCustomersByMonthsController = async (req, res) => {
   try {
-    const query = res.query;
+    const query = req.query;
     const response = await getStatisticCustomersByMonths(query);
     return res.status(response.code).send(response);
   } catch (error) {
