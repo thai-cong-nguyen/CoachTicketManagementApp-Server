@@ -37,4 +37,54 @@ const getAllServices = async ({ page, limit, order, ...query }) => {
   }
 };
 
-module.exports = { getAllServices, createNewService };
+const getServicesOfCoaches = async (rawData) => {
+  try {
+  } catch (error) {}
+};
+
+const removeServiceOutOfCoach = async ({ coachId, serviceId }) => {
+  try {
+    const coachType = await db.CoachService.findOne({
+      where: { coachId: coachId, serviceId: serviceId },
+    });
+    if (!coachType) return apiReturns.error(404, "Coach have not this service");
+    await db.CoachService.destroy({ where: { id: coachType.id } });
+    return apiReturns.success(200, "Removed this service from coach");
+  } catch (error) {
+    console.error(error);
+    return apiReturns.error(400, "Something went wrong");
+  }
+};
+
+const addServiceForCoach = async ({ coachId, serviceId }) => {
+  try {
+    const [coachService, created] = await db.CoachService.findOrCreate({
+      where: {
+        coachId: coachId,
+        serviceId: serviceId,
+      },
+      defaults: {
+        coachId: coachId,
+        serviceId: serviceId,
+      },
+    });
+    if (!created)
+      return apiReturns.error(409, "Service is available for this Coach");
+    return apiReturns.success(
+      200,
+      "Added Service for this Coach",
+      coachService
+    );
+  } catch (error) {
+    console.error(error);
+    return apiReturns.error(400, "Something went wrong");
+  }
+};
+
+module.exports = {
+  getAllServices,
+  createNewService,
+  removeServiceOutOfCoach,
+  addServiceForCoach,
+  getServicesOfCoaches,
+};

@@ -14,6 +14,7 @@ const staffReportRouter = require("./staffReports.route");
 const paymentRouter = require("./payment.route");
 const statisticRouter = require("./statistics.route");
 const uploadRouter = require("./upload.route");
+const serviceRouter = require("./services.route");
 
 const {
   internalServerError,
@@ -54,6 +55,8 @@ const apiWebRoutes = (app) => {
   app.use("/api/statistic", statisticRouter);
   // Upload Image Router
   app.use("/api/upload", uploadRouter);
+  // Service Router
+  app.use("/api/services", serviceRouter);
 
   return app.use(notFoundError);
 };
