@@ -39,6 +39,7 @@ module.exports = {
       const coaches = await db.Coach.findAndCountAll({
         where: query,
         ...queries,
+        include: [{ model: db.CoachType, as: "CoachTypeData" }],
       });
       return apiReturns.success(200, "Get Coaches Successfully", coaches);
     } catch (error) {
