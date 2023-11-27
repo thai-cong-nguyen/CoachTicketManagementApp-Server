@@ -14,14 +14,15 @@ const getStatisticCustomersBySchedule = async (rawData) => {
     await Promise.all(
       schedules.rows.map(async (schedule) => {
         if (!res.hasOwnProperty(schedule)) {
-          res[schedule] = 0;
+          res[schedule.id] = 0;
         }
+        console.log(res);
         const amountOfCustomers = await db.Reservation.count({
-          where: { schedule: schedule.id, status: 2 },
+          where: { scheduleId: schedule.id, status: "4" },
           distinct: true,
           col: "passengerId",
         });
-        res[schedule] = amountOfCustomers;
+        res[schedule.id] = amountOfCustomers;
       })
     );
     return apiReturns.success(200, "Get Successfully", res);
@@ -35,24 +36,54 @@ const getStatisticCustomersByMonths = async ({ year }) => {
   try {
     let res = {};
     for (let month = 1; month <= 12; month++) {
+      const startDate = new Date(
+        year ? year : new Date().getFullYear(),
+        month - 1,
+        1
+      );
+      const endDate = new Date(
+        year ? year : new Date().getFullYear(),
+        month,
+        0
+      );
       const amountOfCustomers = await db.Reservation.count({
         where: {
           [Op.and]: [
-            Sequelize.where(
-              Sequelize.fn("MONTH", Sequelize.col("reservationDate")),
-              month
-            ),
-            Sequelize.where(
-              Sequelize.fn("YEAR", Sequelize.col("reservationDate")),
-              year ? year : new Date().getFullYear()
-            ),
+            db.Sequelize.where(db.Sequelize.col("reservationDate"), {
+              [Op.gte]: startDate,
+              [Op.lt]: endDate,
+            }),
+            { status: "4" },
           ],
-          status: "2",
         },
         distinct: true,
         col: "passengerId",
       });
-      res.month = amountOfCustomers;
+      res[month] = amountOfCustomers;
+      // const amountOfCustomers = await db.Reservation.count({
+      //   where: {
+      //     [Op.and]: [
+      //       db.Sequelize.where(
+      //         db.Sequelize.fn(
+      //           "EXTRACT",
+      //           db.Sequelize.literal("MONTH FROM reservationDate")
+      //         ),
+      //         month
+      //       ),
+      //       db.Sequelize.where(
+      //         db.Sequelize.fn(
+      //           "EXTRACT",
+      //           db.Sequelize.col("YEAR FROM reservationDate")
+      //         ),
+      //         year ? year : new Date().getFullYear()
+      //       ),
+      //     ],
+      //     status: "2",
+      //   },
+      //   distinct: true,
+      //   col: "passengerId",
+      // });
+      // res.month = amountOfCustomers;
     }
     return apiReturns.success(200, "Get Successfully", res);
   } catch (error) {
@@ -76,17 +107,20 @@ const getStatisticCustomersByYears = async ({ fromYear, toYear }) => {
       const amountOfCustomers = await db.Reservation.count({
         where: {
           [Op.and]: [
-            Sequelize.where(
-              Sequelize.fn("YEAR", Sequelize.col("reservationDate")),
+            db.Sequelize.where(
+              db.Sequelize.fn(
+                "EXTRACT",
+                db.Sequelize.literal('YEAR FROM "reservationDate"')
+              ),
               year ? year : new Date().getFullYear()
             ),
           ],
-          status: "2",
+          status: "4",
         },
         distinct: true,
         col: "passengerId",
       });
-      res.year = amountOfCustomers;
+      res[year] = amountOfCustomers;
     }
     return apiReturns.success(200, "Get Successfully", res);
   } catch (error) {

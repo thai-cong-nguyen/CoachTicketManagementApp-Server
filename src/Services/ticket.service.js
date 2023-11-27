@@ -73,7 +73,7 @@ const getTickets = async ({ queries, reservationId, ...query }) => {
       found.reservationId.push(curr.id);
       found.seatNumber.push(curr.seatNumber);
       found.PassengerData.push(curr.PassengerData);
-      found.totalPrice += curr.ScheduleData.price;
+      found.totalPrice += parseInt(curr.ScheduleData.price);
     } else {
       acc.push({
         reservationId: [curr.id],
@@ -84,7 +84,7 @@ const getTickets = async ({ queries, reservationId, ...query }) => {
         discountId: curr.discountId,
         status: curr.status,
         note: curr.note,
-        totalPrice: curr.ScheduleData.price,
+        totalPrice: parseInt(curr.ScheduleData.price),
         status: curr.status,
         departurePoint: curr.departurePoint,
         arrivalPoint: curr.arrivalPoint,
