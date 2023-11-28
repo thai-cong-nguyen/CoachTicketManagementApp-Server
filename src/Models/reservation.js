@@ -45,7 +45,10 @@ module.exports = (sequelize, DataTypes) => {
         as: "ArrivalPlaceData",
       });
       // has many
-      // Reservation.hasMany(models.ShuttlePassengers, { onDelete: "CASCADE" });
+      Reservation.hasMany(models.ShuttlePassengers, {
+        foreignKey: "reservationId",
+        onDelete: "CASCADE",
+      });
     }
   }
   Reservation.init(

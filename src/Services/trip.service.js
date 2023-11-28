@@ -28,10 +28,18 @@ const getAllTrips = async ({
           : +page - 1 * (+limit || +process.env.PAGINATION_LIMIT),
       order: order || undefined,
     };
-
+    let roundTripQuery = {};
     // Add conditions for "from" and "to" places.
-    if (from) query["$StartPlaceData.placeName$"] = from;
-    if (to) query["$ArrivalPlace.placeName$"] = to;
+    if (from) {
+      query["$StartPlaceData.placeName$"] = from;
+      if (roundTrip === "true")
+        roundTripQuery["$ArrivalPlace.placeNam$"] = from;
+    }
+    if (to) {
+      query["$ArrivalPlace.placeName$"] = to;
+      if (roundTrip === "true")
+        roundTripQuery["$StartPlaceData.placeName$"] = to;
+    }
 
     // Add conditions for departure time (ignoring time).
     if (departureTime)
@@ -83,7 +91,7 @@ const getAllTrips = async ({
         },
       ],
     });
-    let resultGetTrips = null;
+    let finalTrips = null;
     if (trips.count > 0) {
       // Calculating the remaining slot seats for each trips.
       await Promise.all(
@@ -107,13 +115,28 @@ const getAllTrips = async ({
         : trips.rows;
 
       // Check if the trip has round trips
-      resultGetTrips = roundTrip
-        ? tripsWithEnoughSeats.filter(async (data) => {
-            const isRoundTrip = await db.Reservation.findOne({
-              where: {
-                "$StartPlaceData.placeName$": to,
-                "$EndPlaceData.placeName$": from,
+      let filteredTrips = null;
+      if (roundTrip === "true") {
+        filteredTrips = await Promise.all(
+          tripsWithEnoughSeats.map(async (data) => {
+            roundTripQuery["$StartPlaceData.placeName$"] =
+              data.ArrivalPlaceData.placeName;
+            roundTripQuery["$ArrivalPlaceData.placeName$"] =
+              data.StartPlaceData.placeName;
+            roundTripQuery[Op.and] = [
+              {
+                "$ArrivalPlaceData.placeName$": data.StartPlaceData.placeName,
+                "$RouteData.departurePlace$": data.RouteData.arrivalPlace,
               },
+            ];
+            const isRoundTrip = await db.Schedule.findOne({
+              where: {
+                ...roundTripQuery,
+                departureTime: {
+                  [Op.gt]: data.arrivalTime,
+                },
+              },
+              ...queries,
               include: [
                 {
                   model: db.Coach,
@@ -149,20 +172,31 @@ const getAllTrips = async ({
                 },
               ],
             });
-            return isRoundTrip;
+
+            if (isRoundTrip) data.roundTrip = isRoundTrip;
+            return isRoundTrip != null ? data : null;
           })
-        : tripsWithEnoughSeats;
+        );
+      }
+      // Remove null values (trips without a round trip)
+      finalTrips =
+        roundTrip === "true"
+          ? filteredTrips.filter((trip) => trip !== null)
+          : tripsWithEnoughSeats;
     }
 
     return apiReturns.success(
       200,
       "Get Successfully",
-      resultGetTrips
+      finalTrips
         ? {
-            count: trips.count,
-            rows: resultGetTrips,
+            count: finalTrips.length,
+            rows: finalTrips,
           }
-        : {}
+        : {
+            count: 0,
+            rows: [],
+          }
     );
   } catch (error) {
     console.error(error.message);

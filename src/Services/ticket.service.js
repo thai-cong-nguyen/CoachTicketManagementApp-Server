@@ -6,7 +6,6 @@ const apiReturns = require("../Helpers/apiReturns.helper");
 const { arraysAreEqual } = require("../Utils/compare.util");
 
 const getTickets = async ({ queries, reservationId, ...query }) => {
-  console.log(query);
   const reservations = await db.Reservation.findAndCountAll({
     where: query,
     ...queries,
@@ -97,6 +96,7 @@ const getTickets = async ({ queries, reservationId, ...query }) => {
     }
     return acc;
   }, []);
+  // const addingRoundTrip = tickets.map(async (ticket) => {});
   const result = reservationId
     ? tickets.filter((ticket) =>
         arraysAreEqual(ticket.reservationId, reservationId)

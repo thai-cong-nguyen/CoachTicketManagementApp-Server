@@ -64,19 +64,30 @@ const addServiceForCoach = async ({ coachId, serviceId }) => {
         coachId: coachId,
         serviceId: serviceId,
       },
+      attributes: ["id", "coachId", "serviceId"],
     });
     if (existingCoachService) {
       return apiReturns.error(409, "Service is available for this Coach");
     }
-    const coachService = await db.CoachService.create({
+    await db.CoachService.create({
       coachId: coachId,
       serviceId: serviceId,
     });
-    return apiReturns.success(
-      200,
-      "Added Service for this Coach",
-      coachService
-    );
+    return apiReturns.success(200, "Added Service for this Coach");
+  } catch (error) {
+    console.error(error);
+    return apiReturns.error(400, "Something went wrong");
+  }
+};
+
+const deleteServiceById = async (rawData) => {
+  try {
+    const serviceId = rawData.params.serviceId;
+    const existingService = await db.Service.findByPk(serviceId);
+    if (!existingService)
+      return apiReturns.error(400, "Service is not available");
+    await db.Service.destroy({ where: { id: serviceId } });
+    return apiReturns.success(200, "Deleted successfully");
   } catch (error) {
     console.error(error);
     return apiReturns.error(400, "Something went wrong");
@@ -89,4 +100,5 @@ module.exports = {
   removeServiceOutOfCoach,
   addServiceForCoach,
   getServicesOfCoaches,
+  deleteServiceById,
 };

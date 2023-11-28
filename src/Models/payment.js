@@ -10,7 +10,10 @@ module.exports = (sequelize, DataTypes) => {
     static associate(models) {
       // define association here
       // has many
-      // Payment.hasMany(models.Reservation, { onDelete: "CASCADE" });
+      Payment.hasMany(models.Reservation, {
+        foreignKey: "paymentId",
+        onDelete: "CASCADE",
+      });
     }
   }
   Payment.init(

@@ -9,7 +9,11 @@ module.exports = (sequelize, DataTypes) => {
      */
     static associate(models) {
       // define association here
-      // MemberShip.hasMany(models.UserAccount, { onDelete: "CASCADE" });
+      // hasMany
+      MemberShip.hasMany(models.UserAccount, {
+        foreignKey: "memberShipId",
+        onDelete: "CASCADE",
+      });
     }
   }
   MemberShip.init(

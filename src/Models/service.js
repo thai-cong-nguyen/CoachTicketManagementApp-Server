@@ -10,7 +10,10 @@ module.exports = (sequelize, DataTypes) => {
     static associate(models) {
       // define association here
       // has many
-      Service.hasMany(models.CoachService, { onDelete: "CASCADE" });
+      Service.hasMany(models.CoachService, {
+        foreignKey: "serviceId",
+        onDelete: "CASCADE",
+      });
     }
   }
   Service.init(

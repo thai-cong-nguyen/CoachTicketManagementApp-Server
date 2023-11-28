@@ -20,7 +20,34 @@ module.exports = (sequelize, DataTypes) => {
         as: "MemberShipData",
       });
       // Has many
-      // UserAccount.hasMany(models.AppReport, { onDelete: "CASCADE" });
+      UserAccount.hasMany(models.AppReport, {
+        foreignKey: "userId",
+        onDelete: "CASCADE",
+      });
+      UserAccount.hasMany(models.Reservation, {
+        foreignKey: "userId",
+        onDelete: "CASCADE",
+      });
+      UserAccount.hasMany(models.Passenger, {
+        foreignKey: "userId",
+        onDelete: "CASCADE",
+      });
+      UserAccount.hasMany(models.StaffReport, {
+        foreignKey: "userId",
+        onDelete: "CASCADE",
+      });
+      UserAccount.hasMany(models.Rating, {
+        foreignKey: "userId",
+        onDelete: "CASCADE",
+      });
+      UserAccount.hasMany(models.Staff, {
+        foreignKey: "userId",
+        onDelete: "CASCADE",
+      });
+      UserAccount.hasMany(models.UserDiscount, {
+        foreignKey: "userId",
+        onDelete: "CASCADE",
+      });
     }
   }
   UserAccount.init(
