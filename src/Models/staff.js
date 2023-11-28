@@ -20,9 +20,26 @@ module.exports = (sequelize, DataTypes) => {
         as: "PositionData",
       });
       // has many
-      // Staff.hasMany(models.StaffReport, { onDelete: "CASCADE" });
-      // Staff.hasMany(models.Shuttle, { onDelete: "CASCADE" });
-      // Staff.hasMany(models.Schedule, { onDelete: "CASCADE" });
+      Staff.hasMany(models.StaffReport, {
+        foreignKey: "staffId",
+        onDelete: "CASCADE",
+      });
+      Staff.hasMany(models.Shuttle, {
+        foreignKey: "driverId",
+        onDelete: "CASCADE",
+      });
+      Staff.hasMany(models.Shuttle, {
+        foreignKey: "coachAssistantId",
+        onDelete: "CASCADE",
+      });
+      Staff.hasMany(models.Schedule, {
+        foreignKey: "driverId",
+        onDelete: "CASCADE",
+      });
+      Staff.hasMany(models.Schedule, {
+        foreignKey: "coachAssistantId",
+        onDelete: "CASCADE",
+      });
     }
   }
   Staff.init(

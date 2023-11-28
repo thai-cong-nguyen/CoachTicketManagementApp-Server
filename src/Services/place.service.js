@@ -4,7 +4,7 @@ const { Op } = require("sequelize");
 const db = require("../Models/index");
 const apiReturns = require("../Helpers/apiReturns.helper");
 
-const getAllFromPlaces = async ({ page, limit, order, ...query }) => {
+const getAllFromPlaces = async ({ page, limit, order, routeId, ...query }) => {
   try {
     const queries = { raw: true, nest: true };
     const offset = !page || +page <= 1 ? 0 : +page - 1;
@@ -12,10 +12,12 @@ const getAllFromPlaces = async ({ page, limit, order, ...query }) => {
     queries.offset = offset * flimit;
     queries.limit = flimit;
     if (order) queries.order = order;
+    if (routeId) query.routeId = routeId;
     query.isPickUpPlace = "1";
     const places = await db.Places.findAndCountAll({
       where: query,
       ...queries,
+      include: [{ model: db.Route, as: "RouteData" }],
     });
     return apiReturns.success(200, "Get Successfully", places);
   } catch (error) {
@@ -24,7 +26,7 @@ const getAllFromPlaces = async ({ page, limit, order, ...query }) => {
   }
 };
 
-const getAllToPlaces = async ({ page, limit, order, ...query }) => {
+const getAllToPlaces = async ({ page, limit, order, routeId, ...query }) => {
   try {
     const queries = { raw: true, nest: true };
     const offset = !page || +page <= 1 ? 0 : +page - 1;
@@ -32,10 +34,12 @@ const getAllToPlaces = async ({ page, limit, order, ...query }) => {
     queries.offset = offset * flimit;
     queries.limit = flimit;
     if (order) queries.order = order;
+    if (routeId) query.routeId = routeId;
     query.isPickUpPlace = "0";
     const places = await db.Places.findAndCountAll({
       where: query,
       ...queries,
+      include: [{ model: db.Route, as: "RouteData" }],
     });
     return apiReturns.success(200, "Get Successfully", places);
   } catch (error) {
@@ -44,7 +48,7 @@ const getAllToPlaces = async ({ page, limit, order, ...query }) => {
   }
 };
 
-const getPlaceWithQuery = async ({ page, limit, order, ...query }) => {
+const getPlaceWithQuery = async ({ page, limit, order, routeId, ...query }) => {
   try {
     const queries = { raw: true, nest: true };
     const offset = !page || +page <= 1 ? 0 : +page - 1;
@@ -52,9 +56,11 @@ const getPlaceWithQuery = async ({ page, limit, order, ...query }) => {
     queries.offset = offset * flimit;
     queries.limit = flimit;
     if (order) queries.order = order;
+    if (routeId) query.routeId = routeId;
     const res = await db.Places.findAndCountAll({
       where: query,
       ...queries,
+      include: [{ model: db.Route, as: "RouteData" }],
     });
     return apiReturns.success(200, "Get Successfully", res);
   } catch (error) {

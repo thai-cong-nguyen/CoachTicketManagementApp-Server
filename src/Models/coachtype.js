@@ -9,6 +9,11 @@ module.exports = (sequelize, DataTypes) => {
      */
     static associate(models) {
       // define association here
+      // hasMany
+      CoachType.hasMany(models.Coach, {
+        foreignKey: "idCoachType",
+        onDelete: "CASCADE",
+      });
     }
   }
   CoachType.init(

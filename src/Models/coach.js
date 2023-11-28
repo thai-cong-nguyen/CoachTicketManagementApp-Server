@@ -15,9 +15,18 @@ module.exports = (sequelize, DataTypes) => {
         as: "CoachTypeData",
       });
       // has many
-      // Coach.hasMany(models.Schedule, { onDelete: "CASCADE" });
-      // Coach.hasMany(models.CoachService, { onDelete: "CASCADE" });
-      // Coach.hasMany(models.Shuttle, { onDelete: "CASCADE" });
+      Coach.hasMany(models.Schedule, {
+        foreignKey: "coachId",
+        onDelete: "CASCADE",
+      });
+      Coach.hasMany(models.CoachService, {
+        foreignKey: "coachId",
+        onDelete: "CASCADE",
+      });
+      Coach.hasMany(models.Shuttle, {
+        foreignKey: "coachId",
+        onDelete: "CASCADE",
+      });
     }
   }
   Coach.init(

@@ -5,6 +5,7 @@ const {
   createNewServiceController,
   removeServiceOutOfCoachController,
   addServiceForCoachController,
+  deleteServiceByIdController,
 } = require("../Controllers/service.controller");
 
 const { verifyJWT } = require("../Middlewares/JWT.middleware");
@@ -16,5 +17,6 @@ router.get("/", getAllServicesController);
 router.post("/", createNewServiceController);
 router.delete("/coaches", removeServiceOutOfCoachController);
 router.post("/coaches", addServiceForCoachController);
+router.delete("/:serviceId", deleteServiceByIdController);
 
 module.exports = router;

@@ -3,6 +3,7 @@ const {
   createNewService,
   removeServiceOutOfCoach,
   addServiceForCoach,
+  deleteServiceById,
 } = require("../Services/service.service");
 
 module.exports = {
@@ -39,6 +40,15 @@ module.exports = {
     try {
       const query = req.query;
       const response = await addServiceForCoach(query);
+      return res.status(response.code).send(response);
+    } catch (error) {
+      console.error(error);
+      return res.status(500).send("Something went wrong");
+    }
+  },
+  deleteServiceByIdController: async (req, res) => {
+    try {
+      const response = await deleteServiceById(req);
       return res.status(response.code).send(response);
     } catch (error) {
       console.error(error);

@@ -40,10 +40,22 @@ module.exports = (sequelize, DataTypes) => {
         as: "ArrivalPlaceData",
       });
       // has many
-      // Schedule.hasMany(models.Reservation, { onDelete: "CASCADE" });
-      // Schedule.hasMany(models.StaffReport, { onDelete: "CASCADE" });
-      // Schedule.hasMany(models.Rating, { onDelete: "CASCADE" });
-      // Schedule.hasMany(models.Shuttle, { onDelete: "CASCADE" });
+      Schedule.hasMany(models.Reservation, {
+        foreignKey: "scheduleId",
+        onDelete: "CASCADE",
+      });
+      Schedule.hasMany(models.StaffReport, {
+        foreignKey: "scheduleId",
+        onDelete: "CASCADE",
+      });
+      Schedule.hasMany(models.Rating, {
+        foreignKey: "scheduleId",
+        onDelete: "CASCADE",
+      });
+      Schedule.hasMany(models.Shuttle, {
+        foreignKey: "scheduleId",
+        onDelete: "CASCADE",
+      });
     }
   }
   Schedule.init(
