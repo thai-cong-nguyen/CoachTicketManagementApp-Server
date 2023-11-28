@@ -26,9 +26,10 @@ exports.getAllToPlacesController = async (req, res, next) => {
   }
 };
 
-exports.getPlaceWithSameRouteController = async (req, res, next) => {
+exports.getAllPlacesController = async (req, res, next) => {
   try {
-    const response = await getPlaceWithQuery(req);
+    const query = req.query;
+    const response = await getPlaceWithQuery(query);
     return res.status(response.code).send(response);
   } catch (error) {
     console.error(error.message);
