@@ -1,6 +1,6 @@
 require("dotenv").config({ path: "../../.env" });
 const bcrypt = require("bcrypt");
-const { Op, fn, col } = require("sequelize");
+const { Op, fn, col, literal } = require("sequelize");
 const db = require("../Models/index");
 const apiReturns = require("../Helpers/apiReturns.helper");
 
@@ -45,10 +45,11 @@ const getAllTrips = async ({
     if (departureTime)
       query.departureTime = {
         [Op.and]: [
-          fn("date", col("departureTime")),
-          {
-            [Op.eq]: new Date(departureTime),
-          },
+          literal(
+            `date_trunc('day', "departureTime") = '${new Date(
+              departureTime
+            ).toISOString()}'::timestamp`
+          ),
         ],
       };
 
