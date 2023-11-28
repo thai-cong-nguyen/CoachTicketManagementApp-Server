@@ -1,6 +1,6 @@
 require("dotenv").config({ path: "../../.env" });
 const bcrypt = require("bcrypt");
-const { Op, fn, col, literal } = require("sequelize");
+const { Op, fn, col, literal, where } = require("sequelize");
 const db = require("../Models/index");
 const apiReturns = require("../Helpers/apiReturns.helper");
 
@@ -42,6 +42,7 @@ const getAllTrips = async ({
     }
 
     // Add conditions for departure time (ignoring time).
+    let suggestedTrips = null;
     if (departureTime) {
       query.departureTime = {
         [Op.and]: [
@@ -53,20 +54,18 @@ const getAllTrips = async ({
         ],
       };
       const targetDepartureTime = new Date(departureTime).toISOString();
-      const suggestedTrips = await db.Schedule.findAndCountAll({
+      suggestedTrips = await db.Schedule.findAndCountAll({
         where: {
           departureTime: {
-            [Op.gte]: targetDepartureTime,
+            [Op.gte]: new Date().toISOString(),
           },
         },
         order: [
           [
             fn(
               "ABS",
-              fn(
-                "EXTRACT",
-                "epoch"
-                // fn("age", col("departureTime"), targetDepartureTime),
+              literal(
+                `EXTRACT('epoch' from AGE("departureTime", '${targetDepartureTime}'))`
               )
             ),
             "ASC",
@@ -108,7 +107,6 @@ const getAllTrips = async ({
           },
         ],
       });
-      console.log(suggestedTrips);
     }
 
     // Merging related table in db to search trips.
@@ -251,10 +249,12 @@ const getAllTrips = async ({
         ? {
             count: finalTrips.length,
             rows: finalTrips,
+            suggestedTrips: suggestedTrips,
           }
         : {
             count: 0,
             rows: [],
+            suggestedTrips: suggestedTrips,
           }
     );
   } catch (error) {
