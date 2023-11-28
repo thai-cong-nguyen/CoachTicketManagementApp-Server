@@ -42,7 +42,7 @@ const getAllTrips = async ({
     }
 
     // Add conditions for departure time (ignoring time).
-    if (departureTime)
+    if (departureTime) {
       query.departureTime = {
         [Op.and]: [
           literal(
@@ -52,6 +52,64 @@ const getAllTrips = async ({
           ),
         ],
       };
+      const targetDepartureTime = new Date(departureTime).toISOString();
+      const suggestedTrips = await db.Schedule.findAndCountAll({
+        where: {
+          departureTime: {
+            [Op.gte]: targetDepartureTime,
+          },
+        },
+        order: [
+          [
+            fn(
+              "ABS",
+              fn(
+                "EXTRACT",
+                "epoch"
+                // fn("age", col("departureTime"), targetDepartureTime),
+              )
+            ),
+            "ASC",
+          ],
+        ],
+        limit: 5,
+        include: [
+          {
+            model: db.Coach,
+            as: "CoachData",
+            include: [
+              {
+                model: db.CoachType,
+                as: "CoachTypeData",
+              },
+            ],
+          },
+          {
+            model: db.Route,
+            as: "RouteData",
+          },
+          {
+            model: db.Staff,
+            as: "DriverData",
+            attributes: ["id", "fullName", "phoneNumber", "gender"],
+          },
+          {
+            model: db.Staff,
+            as: "CoachAssistantData",
+            attributes: ["id", "fullName", "phoneNumber", "gender"],
+          },
+          {
+            model: db.Places,
+            as: "StartPlaceData",
+          },
+          {
+            model: db.Places,
+            as: "ArrivalPlaceData",
+          },
+        ],
+      });
+      console.log(suggestedTrips);
+    }
 
     // Merging related table in db to search trips.
     const trips = await db.Schedule.findAndCountAll({
@@ -200,7 +258,7 @@ const getAllTrips = async ({
           }
     );
   } catch (error) {
-    console.error(error.message);
+    console.error(error);
     return apiReturns.error(400, error.message);
   }
 };
