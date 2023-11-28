@@ -33,10 +33,10 @@ const getAllTrips = async ({
     if (from) {
       query["$StartPlaceData.placeName$"] = from;
       if (roundTrip === "true")
-        roundTripQuery["$ArrivalPlace.placeNam$"] = from;
+        roundTripQuery["$ArrivalPlaceData.placeName$"] = from;
     }
     if (to) {
-      query["$ArrivalPlace.placeName$"] = to;
+      query["$ArrivalPlaceData.placeName$"] = to;
       if (roundTrip === "true")
         roundTripQuery["$StartPlaceData.placeName$"] = to;
     }
