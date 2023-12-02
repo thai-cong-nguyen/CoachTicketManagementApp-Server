@@ -127,10 +127,31 @@ const deleteSchedule = async (rawData) => {
   }
 };
 
+const countNumberOfPassengerByScheduleId = async (scheduleId) => {
+  const reservations = await db.Reservation.findAndCountAll({
+    where: { scheduleId: scheduleId },
+  });
+  return reservations ? reservations.count : 0;
+};
+
+const remainingSlotOfSchedule = async (scheduleId, coachId) => {
+  const numberOfPassenger = await countNumberOfPassengerByScheduleId(
+    scheduleId
+  );
+  const coach = await db.Coach.findByPk(coachId);
+  return coach
+    ? coach.capacity - numberOfPassenger > 0
+      ? coach.capacity - numberOfPassenger
+      : 0
+    : 0;
+};
+
 module.exports = {
   getAllSchedules,
   createNewSchedule,
   deleteScheduleById,
   deleteSchedule,
   updateSchedule,
+  countNumberOfPassengerByScheduleId,
+  remainingSlotOfSchedule,
 };

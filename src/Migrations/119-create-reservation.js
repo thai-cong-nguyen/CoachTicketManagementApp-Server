@@ -15,7 +15,7 @@ module.exports = {
         references: { model: "Schedules", key: "id" },
       },
       passengerId: {
-        allowNull: false,
+        allowNull: true,
         type: Sequelize.BIGINT,
         references: { model: "Staffs", key: "id" },
       },

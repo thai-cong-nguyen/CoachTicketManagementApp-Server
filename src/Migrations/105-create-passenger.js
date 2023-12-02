@@ -23,7 +23,7 @@ module.exports = {
         type: Sequelize.STRING,
       },
       userId: {
-        allowNull: false,
+        allowNull: true,
         type: Sequelize.BIGINT,
         references: { model: "UserAccounts", key: "id" },
       },

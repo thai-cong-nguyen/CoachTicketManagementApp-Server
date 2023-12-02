@@ -8,4 +8,11 @@ module.exports = {
   deleteShuttlePassengerById: async (id) => {
     await db.ShuttlePassenger.destroy({ where: { id: id } });
   },
+
+  countOfShuttlePassenger: async (shuttleRouteId) => {
+    const shuttlePassengers = await db.ShuttlePassenger.findAndCountAll({
+      where: { shuttleRouteId: shuttleRouteId },
+    });
+    return shuttlePassengers ? shuttlePassengers.count : 0;
+  },
 };

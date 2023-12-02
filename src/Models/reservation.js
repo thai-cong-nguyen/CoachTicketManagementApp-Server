@@ -63,6 +63,13 @@ module.exports = (sequelize, DataTypes) => {
       discountId: DataTypes.BIGINT,
       note: DataTypes.STRING,
       status: DataTypes.ENUM("0", "1", "2", "3", "4"),
+      /**
+         *   0 [note: 'processing']
+              1 [note: 'confirmed']
+              2 [note: 'cancel']
+              3 [note: 'uncheck']
+              4 [note: 'checked']
+         */
       departurePoint: DataTypes.BIGINT,
       arrivalPoint: DataTypes.BIGINT,
       isShuttle: DataTypes.BOOLEAN,

@@ -1,11 +1,12 @@
 const {
   getAllTickets,
   fillTicketInfo,
-  changeSeatTicket,
   chooseSeatTicket,
   getAllTicketsOfUsers,
   getUserTicketsHistory,
-  bookingTicket,
+  createBookingTicket,
+  cancelBookingTicket,
+  confirmBookingTicket,
 } = require("../Services/ticket.service");
 
 exports.getAllTicketsController = async (req, res) => {
@@ -22,16 +23,6 @@ exports.getAllTicketsController = async (req, res) => {
 exports.fillTicketInfoController = async (req, res) => {
   try {
     const response = await fillTicketInfo(req);
-    return res.status(response.code).send(response);
-  } catch (error) {
-    console.error(error.message);
-    return res.status(404).send("Something went wrong");
-  }
-};
-
-exports.changeSeatTicketController = async (req, res) => {
-  try {
-    const response = await changeSeatTicket(req);
     return res.status(response.code).send(response);
   } catch (error) {
     console.error(error.message);
@@ -73,10 +64,30 @@ exports.getUserTicketsHistoryController = async (req, res, next) => {
 
 exports.bookingTicketController = async (req, res, next) => {
   try {
-    const response = await bookingTicket(req);
+    const response = await createBookingTicket(req);
     return res.status(response.code).send(response);
   } catch (error) {
     console.error(error.message);
+    return res.status(404).send("Something went wrong");
+  }
+};
+
+exports.cancelBookingTicketController = async (req, res, next) => {
+  try {
+    const response = await cancelBookingTicket(req);
+    return res.status(response.code).send(response);
+  } catch (error) {
+    console.error(error.message);
+    return res.status(404).send("Something went wrong");
+  }
+};
+
+exports.confirmBookingTicketController = async (req, res, next) => {
+  try {
+    const response = await confirmBookingTicket(req);
+    return res.status(response.code).send(response);
+  } catch (error) {
+    console.log(error.message);
     return res.status(404).send("Something went wrong");
   }
 };

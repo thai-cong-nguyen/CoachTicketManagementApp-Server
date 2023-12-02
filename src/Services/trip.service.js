@@ -3,6 +3,7 @@ const bcrypt = require("bcrypt");
 const { Op, fn, col, literal, where } = require("sequelize");
 const db = require("../Models/index");
 const apiReturns = require("../Helpers/apiReturns.helper");
+const { countNumberOfPassengerByScheduleId } = require("./schedule.service");
 
 const getAllTrips = async ({
   page,
@@ -279,13 +280,6 @@ const getSeatTrip = async (rawData) => {
     console.error(error.message);
     return apiReturns.error(400, error.message);
   }
-};
-
-const countNumberOfPassengerByScheduleId = async (scheduleId) => {
-  const reservations = await db.Reservation.findAndCountAll({
-    where: { scheduleId: scheduleId },
-  });
-  return reservations ? reservations.count : 0;
 };
 
 const getPopularTrip = async (rawData) => {
