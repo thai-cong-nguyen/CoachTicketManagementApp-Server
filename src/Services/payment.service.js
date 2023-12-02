@@ -4,22 +4,49 @@ const db = require("../Models/index");
 const KEY_STRIPE = process.env.KEY_STRIPE;
 const stripe = require("stripe")(KEY_STRIPE);
 const apiReturns = require("../Helpers/apiReturns.helper");
+const { getPrice } = require("../Patterns/strategies/price.patterns");
 
 const paymentGateway = async (rawData) => {
   try {
-    const { discountId, userId, ...data } = rawData.body;
-    if (discountId && userId) {
-      const discount = await db.UserDiscount.findOne({
-        where: { userId: userId, discountId: discountId, status: "0" },
-      });
-      if (!discount) {
-        return apiReturns.error(404, "Discount is not available");
+    const { discountId, reservations, cost } = rawData.body;
+    let totalCost = getPrice({ originalPrice: cost }, "defaultPrice");
+    const result = await db.sequelize.transaction(async (tx) => {
+      if (discountId) {
+        const discount = await db.UserDiscount.findOne({
+          where: {
+            userId: rawData.user.userId,
+            discountId: discountId,
+            status: "0",
+          },
+        });
+        if (!discount) {
+          throw new Error("Discount is not available");
+        }
+        await db.UserDiscount.update(
+          { status: "1" },
+          {
+            where: { userId: rawData.user.userId, discountId: discountId },
+            transaction: tx,
+          }
+        );
+        totalCost = getPrice(
+          { percentDiscount: discount.value, originalPrice: cost },
+          "discount"
+        );
       }
-      await db.UserDiscount.update(
-        { status: "1" },
-        { where: { userId: userId, discountId: discountId } }
-      );
-    }
+      reservations.forEach(async (reservationId) => {
+        const reservation = await db.Reservation.findByPk(reservationId);
+        if (!reservation) {
+          throw new Error("Can not find reservation");
+        } else {
+          await db.Reservation.update(
+            { status: "3" },
+            { where: { id: reservation.id }, transaction: tx }
+          );
+        }
+      });
+    });
+
     // Use an existing Customer ID if this is a returning customer.
     const ephemeralKey = await stripe.ephemeralKeys.create(
       { customer: "cus_OjlFGeYC9TMFbu" },
@@ -27,7 +54,7 @@ const paymentGateway = async (rawData) => {
     );
 
     const paymentIntent = await stripe.paymentIntents.create({
-      amount: data.cost,
+      amount: totalCost,
       currency: "VND",
       customer: "cus_OjlFGeYC9TMFbu",
       // In the latest version of the API, specifying the `automatic_payment_methods` parameter is optional because Stripe enables its functionality by default.

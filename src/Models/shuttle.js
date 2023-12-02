@@ -56,7 +56,7 @@ module.exports = (sequelize, DataTypes) => {
       arrivalPlaceId: DataTypes.BIGINT,
       distance: DataTypes.FLOAT,
       duration: DataTypes.FLOAT,
-      passengerQuality: DataTypes.INTEGER,
+      passengerQuantity: DataTypes.INTEGER,
       status: DataTypes.ENUM("0", "1", "2", "3"),
       departurePlaceLat: DataTypes.FLOAT,
       departurePlaceLng: DataTypes.FLOAT,

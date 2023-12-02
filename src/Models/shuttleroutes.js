@@ -32,6 +32,10 @@ module.exports = (sequelize, DataTypes) => {
       departureTime: DataTypes.DATE,
       departurePlaceId: DataTypes.BIGINT,
       status: DataTypes.ENUM("0", "1", "2", "3"),
+      /**
+         * 0 [note: 'processing']
+          1 [note: 'finished'] 
+         */
       departurePlaceLat: DataTypes.FLOAT,
       departurePlaceLng: DataTypes.FLOAT,
     },

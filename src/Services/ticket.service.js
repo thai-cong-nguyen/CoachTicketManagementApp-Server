@@ -4,6 +4,8 @@ const { Op } = require("sequelize");
 const db = require("../Models/index");
 const apiReturns = require("../Helpers/apiReturns.helper");
 const { arraysAreEqual } = require("../Utils/compare.util");
+const { remainingSlotOfSchedule } = require("./schedule.service");
+const { countOfShuttlePassenger } = require("./shuttlePassenger.service");
 
 const getTickets = async ({ queries, reservationId, ...query }) => {
   const reservations = await db.Reservation.findAndCountAll({
@@ -193,32 +195,6 @@ const fillTicketInfo = async (rawData) => {
   }
 };
 
-const changeSeatTicket = async (rawData) => {
-  try {
-    const data = rawData.body;
-    const checkExistedReservation = await db.Reservation.findOne({
-      where: {
-        seatNumber: data.seatNumber,
-      },
-    });
-    if (checkExistedReservation) {
-      return apiReturns.validation("Seat is not available");
-    }
-    const reservation = await db.Reservation.update(
-      { seatNumber: data.seatNumber },
-      {
-        where: {
-          passengerId: data.passengerId,
-        },
-      }
-    );
-    return apiReturns.success(200, "Change Seat Successfully", reservation);
-  } catch (error) {
-    console.error(error.message);
-    return apiReturns.error(400, error.message);
-  }
-};
-
 const chooseSeatTicket = async (rawData) => {
   try {
     const user = rawData.user;
@@ -246,44 +222,279 @@ const chooseSeatTicket = async (rawData) => {
   }
 };
 
-const bookingTicket = async (rawData) => {
-  return new Promise(async (resolve, reject) => {
-    try {
-      // data get from request's body && response for client.
-      const data = rawData.body;
+const createBookingTicket = async (rawData) => {
+  try {
+    // data get from request's body && response for the client.
+    const {
+      scheduleId,
+      seats,
+      paymentId,
+      departurePoint,
+      arrivalPoint,
+      shuttle,
+      roundTrip,
+    } = rawData.body;
+    let reservations = [];
+    // processing for booking.
+    const result = await db.sequelize.transaction(async (tx) => {
+      const schedule = await db.Schedule.findByPk(scheduleId);
+      if (!schedule) {
+        throw new Error("Can not find schedule");
+      }
 
-      const transaction = await db.sequelize.transaction(async (t) => {
-        let res = [];
-        // fill passenger detail for ticket.
-        await Promise.all(
-          data.forEach(async (e) => {
-            const passenger = await db.Passenger.findOrCreate({
-              where: { phoneNumber: e.phoneNumber },
-              default: e.passenger,
-            });
-            const reservation = await db.Reservation.update(
-              { passengerId: passenger.id },
-              { where: { id: e.id } }
-            );
-            res.push({ passenger, reservation });
-          })
-        );
-        // processing for booking.
+      const remainingSlot = await remainingSlotOfSchedule(
+        scheduleId,
+        schedule.coachId
+      );
+
+      if (remainingSlot < seats.length) {
+        throw new Error("Can not enough seats for booking");
+      }
+
+      await Promise.all(
+        seats.map(async (seat) => {
+          const [reservation, created] = await db.Reservation.findOrCreate({
+            where: { seatNumber: seat },
+            defaults: {
+              userId: rawData.user.userId,
+              scheduleId,
+              seatNumber: seat,
+              reservationDate: new Date().toISOString(),
+              paymentId,
+              departurePoint,
+              arrivalPoint,
+            },
+            transaction: tx,
+          });
+          if (!created) {
+            throw new Error("Seat is not Available");
+          } else {
+            reservations.push(reservation);
+          }
+        })
+      );
+    });
+
+    // shuttle processing
+    let shuttlePassenger = [];
+    if (shuttle) {
+      const shuttleRoute = await db.ShuttleRoute.findByPk(
+        shuttle.shuttleRouteId
+      );
+      if (!shuttleRoute) {
+        throw new Error("Shuttle Route is not Available");
+      }
+      const remainingSlotShuttle = await countOfShuttlePassenger(
+        shuttleRoute.id
+      );
+      if (remainingSlotShuttle <= shuttle.quantity) {
+        throw new Error("Can not enough seats for shuttle");
+      }
+      reservations.forEach(async (reservation) => {
+        const [shuttleRoute, created] = await db.ShuttleRoute.findOrCreate({
+          where: {
+            shuttleRouteId: shuttle.shuttleRouteId,
+            reservationId: reservation.id,
+          },
+        });
+        if (!created) {
+          throw new Error("This passenger is booking Shuttle");
+        } else {
+          shuttlePassenger.push(shuttleRoute);
+        }
       });
-
-      resolve(apiReturns.success(200, "Booked Ticket Successfully"));
-    } catch (error) {
-      reject(error);
     }
-  });
+
+    // roundTrip processing
+    let reservationsRoundTrip = [];
+    let shuttlePassengerRoundTrip = [];
+    if (roundTrip) {
+      const scheduledRoundTrip = await db.Schedule.findByPk(
+        roundTrip.scheduleId
+      );
+      if (!scheduledRoundTrip) {
+        throw new Error("Can not find schedule for round Trip");
+      }
+
+      const remainingSlotOfRoundTrip = await remainingSlotOfSchedule(
+        roundTrip.scheduleId,
+        scheduledRoundTrip.coachId
+      );
+
+      if (remainingSlotOfRoundTrip < roundTrip.seats.length) {
+        throw new Error("Can not enough seats of Round Trip for booking");
+      }
+
+      await Promise.all(
+        roundTrip.seats.map(async (seat) => {
+          const [reservation, created] = await db.Reservation.findOrCreate({
+            where: { seatNumber: seat },
+            defaults: {
+              userId: rawData.user.userId,
+              scheduleId: roundTrip.scheduleId,
+              seatNumber: seat,
+              reservationDate: new Date().toISOString(),
+              paymentId,
+              departurePoint: roundTrip.departurePoint,
+              arrivalPoint: roundTrip.arrivalPoint,
+            },
+            transaction: tx,
+          });
+          if (!created) {
+            throw new Error("Seat for Round Trip is not Available");
+          } else {
+            reservationsRoundTrip.push(reservation);
+          }
+        })
+      );
+
+      if (roundTrip.shuttle) {
+        const shuttleRoute = await db.ShuttleRoute.findByPk(
+          roundTrip.shuttle.shuttleRouteId
+        );
+        if (!shuttleRoute) {
+          throw new Error("Shuttle Route is not Available");
+        }
+        const remainingSlotShuttle = await countOfShuttlePassenger(
+          shuttleRoute.id
+        );
+        if (remainingSlotShuttle <= roundTrip.shuttle.quantity) {
+          throw new Error("Can not enough seats for shuttle");
+        }
+        reservationsRoundTrip.forEach(async (reservation) => {
+          const [shuttleRoute, created] = await db.ShuttleRoute.findOrCreate({
+            where: {
+              shuttleRouteId: roundTrip.shuttle.shuttleRouteId,
+              reservationId: reservation.id,
+            },
+          });
+          if (!created) {
+            throw new Error("This passenger is booking Shuttle");
+          } else {
+            shuttlePassengerRoundTrip.push(shuttleRoute);
+          }
+        });
+      }
+    }
+
+    return apiReturns.success(200, "Created Booking Ticket Successfully", {
+      reservations,
+      reservationsRoundTrip,
+      shuttlePassenger,
+      shuttlePassengerRoundTrip,
+    });
+  } catch (error) {
+    console.error(error);
+    return apiReturns.error(400, error.message);
+  }
+};
+
+const cancelBookingTicket = async (rawData) => {
+  try {
+    const {
+      reservations,
+      reservationsRoundTrip,
+      shuttlePassenger,
+      shuttlePassengerRoundTrip,
+    } = rawData.body;
+    const result = await db.sequelize.transaction(async (tx) => {
+      reservations.forEach(async (reservationId) => {
+        const reservation = await db.Reservation.findByPk(reservationId);
+        if (!reservation) {
+          throw new Error("Can not find reservation");
+        } else {
+          await db.Reservation.destroy({
+            where: { id: reservation.id },
+            transaction: tx,
+          });
+        }
+      });
+      if (reservationsRoundTrip) {
+        reservationsRoundTrip.forEach(async (reservationId) => {
+          const reservation = await db.Reservation.findByPk(reservationId);
+          if (!reservation) {
+            throw new Error("Can not find reservation for round trip");
+          } else {
+            await db.Reservation.destroy({
+              where: { id: reservation.id },
+              transaction: tx,
+            });
+          }
+        });
+      }
+      if (shuttlePassenger) {
+        shuttlePassenger.forEach(async (shuttlePassengerId) => {
+          const shuttlePassenger = await db.ShuttlePassenger.findByPk(
+            shuttlePassengerId
+          );
+          if (!shuttlePassenger) {
+            throw new Error("Can not find shuttle for passenger");
+          } else {
+            await db.ShuttlePassenger.destroy({
+              where: { id: shuttlePassenger.id },
+              transaction: tx,
+            });
+          }
+        });
+      }
+      if (shuttlePassengerRoundTrip) {
+        shuttlePassengerRoundTrip.forEach(async (shuttlePassengerId) => {
+          const shuttlePassenger = await db.ShuttlePassenger.findByPk(
+            shuttlePassengerId
+          );
+          if (!shuttlePassenger) {
+            throw new Error("Can not find shuttle of round trip for passenger");
+          } else {
+            await db.ShuttlePassenger.destroy({
+              where: { id: shuttlePassenger.id },
+              transaction: tx,
+            });
+          }
+        });
+      }
+    });
+    return apiReturns.success(200, "Canceled Booking Ticket Successfully");
+  } catch (error) {
+    console.log(error);
+    return apiReturns.error(400, error.message);
+  }
+};
+
+const confirmBookingTicket = async (rawData) => {
+  try {
+    const { passengers, reservations } = rawData.body;
+    const result = await db.sequelize.transaction(async (tx) => {
+      if (passengers.length !== reservations.length) {
+        throw new Error("Fill full passenger for reservation");
+      }
+      await Promise.all(
+        passengers.forEach(async (passengerInfo) => {
+          const passenger = await db.Passenger.findOrCreate({
+            where: { phoneNumber: passengerInfo.phoneNumber },
+            default: passengerInfo.passenger,
+            transaction: tx,
+          });
+          const reservation = await db.Reservation.update(
+            { passengerId: passenger.id },
+            { where: { id: e.id }, transaction: tx }
+          );
+        })
+      );
+    });
+    return apiReturns.success(200, "Filled Information Successfully", result);
+  } catch (error) {
+    console.error(error);
+    return apiReturns.error(400, error.message);
+  }
 };
 
 module.exports = {
   getAllTickets,
   fillTicketInfo,
   chooseSeatTicket,
-  changeSeatTicket,
   getAllTicketsOfUsers,
   getUserTicketsHistory,
-  bookingTicket,
+  createBookingTicket,
+  cancelBookingTicket,
+  confirmBookingTicket,
 };
