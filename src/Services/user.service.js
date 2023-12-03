@@ -4,7 +4,7 @@ const { Op } = require("sequelize");
 const db = require("../Models/index");
 const apiReturns = require("../Helpers/apiReturns.helper");
 const { renameKeyRedis } = require("./redis.service");
-const { hashPassword } = require("../Services/auth.service");
+const { hashPassword, checkPassword } = require("../Services/auth.service");
 const { initializeApp } = require("firebase/app");
 const { firebaseConfig } = require("../Configs/firebase.config");
 const {
@@ -207,50 +207,57 @@ const updateUserAccountById = async (rawData) => {
 
 const changePasswordCurrentUserAccount = async (rawData) => {
   try {
+    const { oldPassword, newPassword } = rawData.body;
     const userId = rawData.user.userId;
     const user = await db.UserAccount.findOne({
       where: { id: userId },
       attributes: { include: ["id", "password"] },
     });
     if (!user) {
-      return apiReturns.validation("Some thing went wrong");
+      throw new Error("Can not find user");
     }
-    const password = rawData.body.password;
+    if (oldPassword === newPassword) {
+      throw new Error("New password could not be same with old password");
+    }
+    const isCorrectPassword = await checkPassword(oldPassword, user.password);
+    if (!isCorrectPassword) {
+      throw new Error("Old password is incorrect");
+    }
     await db.UserAccount.update(
-      { password: await hashPassword(password) },
-      { where: { id: user.id } }
+      { password: await hashPassword(newPassword) },
+      { where: { id: userId } }
     );
-    return apiReturns.success(200, "Change Password Successfully");
+    return apiReturns.success(200, "Changed Password Successfully");
   } catch (error) {
-    console.log(error.message);
-    return apiReturns.error(500, error.message);
+    console.log(error);
+    return apiReturns.error(400, error.message);
   }
 };
 
 const updateRewardPoint = async (rawData) => {
-  return new Promise(async (resolve, reject) => {
-    try {
-      const changedPoint = rawData.body.point;
-      const userId = rawData.params.userId;
-      const userAccount = await db.UserAccount.findByPk(userId);
-      // Different current user and not be admin user
-      if (userId !== rawData.user.userId && userAccount.roleId !== "3") {
-        reject(apiReturns.error(400, "Can not have permission"));
-      }
-      await db.sequelize.transaction(async (t) => {
-        userAccount.rewardPoint + changedPoint >= 0
-          ? await db.UserAccount.update(
-              { rewardPoint: userAccount.rewardPoint + changedPoint },
-              { where: { id: userId } },
-              { transaction: t }
-            )
-          : reject(apiReturns.error(400, "Not have enough reward points"));
-      });
-      resolve(apiReturns.success(200, "Change Reward Point Successfully"));
-    } catch (error) {
-      reject(apiReturns.error(500, error.message));
+  try {
+    const changedPoint = rawData.body.point;
+    const userId = rawData.user.userId;
+    const userAccount = await db.UserAccount.findByPk(userId);
+    // Different current user and not be admin user
+    if (!userAccount) {
+      throw new Error("Can not find user account");
     }
-  });
+    await db.sequelize.transaction(async (t) => {
+      if (userAccount.rewardPoint + changedPoint >= 0) {
+        await db.UserAccount.update(
+          { rewardPoint: userAccount.rewardPoint + changedPoint },
+          { where: { id: userId }, transaction: t }
+        );
+      } else {
+        throw new Error(apiReturns.error(400, "Not have enough reward points"));
+      }
+    });
+    return apiReturns.success(200, "Change Reward Point Successfully");
+  } catch (error) {
+    console.error(error);
+    return apiReturns.error(400, error.message);
+  }
 };
 
 module.exports = {

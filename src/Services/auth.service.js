@@ -17,7 +17,7 @@ const salt = bcrypt.genSaltSync(10);
 const hashPassword = (password) => {
   return new Promise(async (resolve, reject) => {
     try {
-      const hashPassword = await bcrypt.hashSync(password, salt);
+      const hashPassword = bcrypt.hashSync(password, salt);
       resolve(hashPassword);
     } catch (error) {
       reject(error);
@@ -407,6 +407,7 @@ const resetPassword = async (rawData, res) => {
 
 module.exports = {
   hashPassword,
+  checkPassword,
   registerNewUserAccount,
   checkEmailOrPhoneNumberExisted,
   loginUserAccount,
