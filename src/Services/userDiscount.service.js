@@ -20,8 +20,8 @@ module.exports = {
       queries.offset = offset * pageLimit;
       queries.limit = pageLimit;
       if (order) queries.order = order;
-      if (userId) queries.userId = userId;
-      if (discountId) queries.discountId = discountId;
+      if (userId) query.userId = userId;
+      if (discountId) query.discountId = discountId;
       const userDiscount = await db.UserDiscount.findAndCountAll({
         where: query,
         includes: [
