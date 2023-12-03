@@ -22,10 +22,7 @@ const upload = multer({ storage: multer.memoryStorage() });
 // private router
 router.use(verifyJWT);
 router.get("/currentAccount", getCurrentUserAccountController);
-router.post(
-  "/changePassword/:userId",
-  changePasswordCurrentUserAccountController
-);
+router.patch("/changePassword", changePasswordCurrentUserAccountController);
 router.patch(
   "/:userId",
   async (req, res, next) => {
@@ -44,7 +41,7 @@ router.patch(
   },
   updateUserAccountController
 );
-router.patch("/updateRewardPoint/:userId", updateRewardPointController);
+router.patch("/updateRewardPoint", updateRewardPointController);
 // Admin permission
 router.use(isAdmin);
 router.get("/", getAllUserAccountsController);
