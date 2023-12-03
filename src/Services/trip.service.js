@@ -11,6 +11,8 @@ const getAllTrips = async ({
   order,
   from,
   to,
+  departurePlace,
+  arrivalPlace,
   departureTime,
   roundTime,
   roundTrip,
@@ -41,7 +43,12 @@ const getAllTrips = async ({
       if (roundTrip === "true")
         roundTripQuery["$StartPlaceData.placeName$"] = to;
     }
-
+    if (departurePlace) {
+      query["$RouteData.departurePlace$"] = departurePlace;
+    }
+    if (arrivalPlace) {
+      query["$RouteData.arrivalPlace$"] = arrivalPlace;
+    }
     // Add conditions for departure time (ignoring time).
     let suggestedTrips = null;
     if (departureTime) {
