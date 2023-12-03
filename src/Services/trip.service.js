@@ -115,6 +115,16 @@ const getAllTrips = async ({
           },
         ],
       });
+      suggestedTrips.rows.map(async (trip) => {
+        const serviceCoachSuggestedTrip = await db.CoachService.findAll({
+          where: { coachId: trip.coachId },
+          include: [
+            { model: db.Coach, as: "CoachData" },
+            { model: db.Service, as: "ServiceData" },
+          ],
+        });
+        trip.ServiceData = serviceCoachSuggestedTrip;
+      });
     }
 
     // Merging related table in db to search trips.
@@ -161,6 +171,13 @@ const getAllTrips = async ({
       // Calculating the remaining slot seats for each trips.
       await Promise.all(
         trips.rows.map(async (data) => {
+          const serviceCoachTrip = await db.CoachService.findAll({
+            where: { coachId: data.coachId },
+            include: [
+              { model: db.Coach, as: "CoachData" },
+              { model: db.Service, as: "ServiceData" },
+            ],
+          });
           const countedReservations = await db.Reservation.count({
             where: {
               scheduleId: data.id,
@@ -171,6 +188,7 @@ const getAllTrips = async ({
             data.CoachData.capacity - countedReservations
           );
           data.remainingSlot = remainingSlot;
+          data.ServiceData = serviceCoachTrip;
         })
       );
 
@@ -238,7 +256,17 @@ const getAllTrips = async ({
               ],
             });
 
-            if (isRoundTrip) data.roundTrip = isRoundTrip;
+            if (isRoundTrip) {
+              const serviceCoachRoundTrip = await db.CoachService.findAll({
+                where: { coachId: isRoundTrip.coachId },
+                include: [
+                  { model: db.Coach, as: "CoachData" },
+                  { model: db.Service, as: "ServiceData" },
+                ],
+              });
+              data.roundTrip = isRoundTrip;
+              data.roundTrip.ServiceData = serviceCoachRoundTrip;
+            }
             return isRoundTrip != null ? data : null;
           })
         );
