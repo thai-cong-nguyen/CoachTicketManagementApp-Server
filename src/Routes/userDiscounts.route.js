@@ -16,7 +16,7 @@ const {
   isAdminOrStaff,
 } = require("../Middlewares/verifyRoles.middleware");
 
-// router.use(verifyJWT);
+router.use(verifyJWT);
 router.get("/", getUserDiscountController);
 router.post("/", addDiscountForUserController);
 router.patch("/:id", updateUserDiscountController);
