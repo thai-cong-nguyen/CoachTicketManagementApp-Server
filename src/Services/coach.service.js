@@ -3,8 +3,6 @@ const bcrypt = require("bcrypt");
 const { Op } = require("sequelize");
 const db = require("../Models/index");
 const apiReturns = require("../Helpers/apiReturns.helper");
-const { deleteScheduleById } = require("./schedule.service");
-const { deleteShuttlesById } = require("./shuttle.service");
 
 module.exports = {
   createNewCoach: async (rawData) => {
@@ -49,40 +47,37 @@ module.exports = {
   },
   updateCoaches: async (rawData) => {
     try {
-      const id = rawData.params.id;
+      const coachId = rawData.params.coachId;
       const data = rawData.body;
-      const coach = await db.Coach.findOne({ where: { id } });
+      const coach = await db.Coach.findByPK(coachId);
       if (!coach) {
-        return apiReturns.error(404, "Coaches Not Found");
+        throw new Error("Coaches Not Found");
       }
-      await db.Coach.update(data, { where: { id } });
-      return apiReturns.success(200, "Update Successfully");
+      const updatedCoach = await db.Coach.update(data, {
+        where: { id: coachId },
+      });
+      return apiReturns.success(
+        200,
+        "Updated Coach Successfully",
+        updatedCoach
+      );
     } catch (error) {
-      console.error(error.message);
+      console.error(error);
       return apiReturns.error(400, error.message);
     }
   },
-  deleteCoachById: async (id) => {
-    const [coachServices, schedules, shuttles] = await Promise.all([
-      db.CoachService.findAndCountAll({ where: { coachId: id } }),
-      db.Schedule.findAndCountAll({ where: { coachId: id } }),
-      db.Shuttle.findAndCountAll({ where: { coachId: id } }),
-    ]);
-    await Promise.all([
-      ...coachServices.map((coachService) =>
-        deleteCoachServiceById(coachService.id)
-      ),
-      ...schedules.map((schedule) => deleteScheduleById(schedule.id)),
-      ...shuttles.map((shuttle) => deleteShuttlesById(shuttle.id)),
-    ]);
-  },
-  deleteCoach: async (rawData) => {
+  deleteCoaches: async (rawData) => {
     try {
-      const id = rawData.params.id;
-      await this.deleteCoachById(id);
-      return apiReturns.success(200, "Delete Successfully");
+      const coachId = rawData.params.coachId;
+      const data = rawData.body;
+      const coach = await db.Coach.findByPK(coachId);
+      if (!coach) {
+        throw new Error("Coaches Not Found");
+      }
+      await db.Coach.destroy({ where: { id: coachId } });
+      return apiReturns.success(200, "Delete Coach Successfully");
     } catch (error) {
-      console.error(error.message);
+      console.error(error);
       return apiReturns.error(400, error.message);
     }
   },

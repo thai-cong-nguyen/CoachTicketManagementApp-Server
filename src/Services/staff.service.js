@@ -59,4 +59,6 @@ const createNewStaff = async (rawData) => {
   }
 };
 
+const getWorkOfStaff = async (rawData) => {};
+
 module.exports = { getAllStaffs, createNewStaff, updateStaff, deleteStaff };
