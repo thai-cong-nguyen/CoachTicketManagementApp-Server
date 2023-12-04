@@ -3,7 +3,6 @@ const bcrypt = require("bcrypt");
 const { Op } = require("sequelize");
 const db = require("../Models/index");
 const apiReturns = require("../Helpers/apiReturns.helper");
-const { deleteShuttlePassengerById } = require("./shuttlePassenger.service");
 
 const getAllShuttleRoutes = async ({ page, limit, order, ...query }) => {
   try {
@@ -34,6 +33,39 @@ const getAllShuttleRoutes = async ({ page, limit, order, ...query }) => {
   }
 };
 
+const createNewShuttleRoute = async (rawData) => {
+  try {
+    const {
+      shuttleId,
+      departureTime,
+      departurePlace,
+      status,
+      departurePlaceLat,
+      departurePlaceLng,
+    } = rawData.body;
+    const shuttle = await db.Shuttle.findByPk(shuttleId);
+    if (!shuttle) {
+      throw new Error("Shuttle is not existed");
+    }
+    const place = await db.Places.findByPk(departurePlace);
+    if (!place) {
+      throw new Error("Departure Place is not existed");
+    }
+    await db.ShuttleRoute.create({
+      shuttleId,
+      departureTime,
+      status,
+      departurePlace,
+      departurePlaceLat,
+      departurePlaceLng,
+    });
+    return apiReturns.success(200, "Created new Shuttle Route Successfully");
+  } catch (error) {
+    console.log(error);
+    return apiReturns.error(400, error.message);
+  }
+};
+
 const updateShuttleRoute = async (rawData) => {
   try {
     const id = rawData.params.id;
@@ -48,34 +80,24 @@ const updateShuttleRoute = async (rawData) => {
   }
 };
 
-const deleteShuttleRouteById = async (id) => {
-  const { count, rows } = await db.ShuttlePassenger.findOne({
-    where: { shuttleRoute: id },
-  });
-  if (count > 0) {
-    await Promise.all(
-      rows.map(async ({ id }) => {
-        await deleteShuttlePassengerById(id);
-      })
-    );
-  }
-  await db.ShuttleRoute.destroy({ where: { id } });
-};
-
 const deleteShuttleRoute = async (rawData) => {
   try {
-    const id = rawData.params.id;
-    await deleteShuttleRouteById(id);
+    const shuttleRouteId = rawData.params.shuttleRouteId;
+    const shuttleRoute = await db.ShuttleRoute.findByPk(shuttleRouteId);
+    if (!shuttleRoute) {
+      throw new Error("Shuttle Route is not existed");
+    }
+    await db.ShuttleRoute.destroy({ where: { id: shuttleRouteId } });
     return apiReturns.success(200, "Delete Successfully");
   } catch (error) {
-    console.error(error.message);
+    console.error(error);
     return apiReturns.error(400, error.message);
   }
 };
 
 module.exports = {
   getAllShuttleRoutes,
+  createNewShuttleRoute,
   updateShuttleRoute,
   deleteShuttleRoute,
-  deleteShuttleRouteById,
 };

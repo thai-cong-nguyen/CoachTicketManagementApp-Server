@@ -3,7 +3,6 @@ const bcrypt = require("bcrypt");
 const { Op } = require("sequelize");
 const db = require("../Models/index");
 const apiReturns = require("../Helpers/apiReturns.helper");
-const { deleteShuttleRouteById } = require("./shuttleRoute.service");
 
 const getAllShuttle = async ({ page, limit, order, ...query }) => {
   try {
@@ -72,27 +71,17 @@ const updateShuttle = async (rawData) => {
   }
 };
 
-const deleteShuttleById = async (id) => {
-  const { count, rows } = await db.ShuttleRoute.findAndCountAll({
-    where: { shuttleId: id },
-  });
-  if (count > 0) {
-    await Promise.all(
-      rows.map(async ({ id }) => {
-        await deleteShuttleRouteById(id);
-      })
-    );
-  }
-  await db.Shuttle.destroy({ where: { id } });
-};
-
 const deleteShuttle = async (rawData) => {
   try {
-    const id = rawData.params.id;
-    await deleteShuttleById(id);
+    const shuttleId = rawData.params.shuttleId;
+    const shuttle = await db.Shuttle.findByPk(shuttleId);
+    if (!shuttle) {
+      throw new Error("Shuttle is not available");
+    }
+    await db.Shuttle.destroy({ where: { id: shuttleId } });
     return apiReturns.success(200, "Delete Successfully");
   } catch (error) {
-    console.error(error.message);
+    console.error(error);
     return apiReturns.error(400, error.message);
   }
 };
@@ -101,6 +90,5 @@ module.exports = {
   getAllShuttle,
   createNewShuttle,
   updateShuttle,
-  deleteShuttleById,
   deleteShuttle,
 };

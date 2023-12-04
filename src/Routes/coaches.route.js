@@ -5,6 +5,8 @@ const { verifyJWT } = require("../Middlewares/JWT.middleware");
 const {
   createNewCoachController,
   getAllCoachesController,
+  updateCoachController,
+  deleteCoachController,
 } = require("../Controllers/coach.controller");
 const {
   isAdmin,
@@ -17,5 +19,7 @@ router.use(verifyJWT);
 router.use(isAdmin);
 router.get("/", getAllCoachesController);
 router.post("/", createNewCoachController);
+router.patch("/:coachId", updateCoachController);
+router.post("/:coachId", deleteCoachController);
 
 module.exports = router;

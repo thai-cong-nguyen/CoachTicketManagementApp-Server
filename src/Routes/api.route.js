@@ -15,6 +15,9 @@ const paymentRouter = require("./payment.route");
 const statisticRouter = require("./statistics.route");
 const uploadRouter = require("./upload.route");
 const serviceRouter = require("./services.route");
+const shuttleRouter = require("./shuttles.route");
+const shuttleRouteRouter = require("./shuttleRoutes.route");
+const shuttlePassengerRouter = require("./shuttlePassengers.route");
 
 const {
   internalServerError,
@@ -57,6 +60,12 @@ const apiWebRoutes = (app) => {
   app.use("/api/upload", uploadRouter);
   // Service Router
   app.use("/api/services", serviceRouter);
+  // Shuttle Router
+  app.use("api/shuttles", shuttleRouter);
+  // Shuttle Route Router
+  app.use("api/shuttleRoutes", shuttleRouter);
+  // Shuttle PassengerRouter
+  app.use("api/shuttlePassengers", shuttleRouter);
 
   return app.use(notFoundError);
 };
