@@ -5,7 +5,7 @@ const { verifyJWT } = require("../Middlewares/JWT.middleware");
 const {
   getAllPassengerOfShuttleController,
   deleteShuttlePassengersController,
-} = require("../Routes/shuttlePassengers.route");
+} = require("../Controllers/shuttlePassenger.controller");
 
 const {
   isAdmin,
@@ -18,3 +18,4 @@ router.use(verifyJWT);
 router.get("/", getAllPassengerOfShuttleController);
 router.use(isAdmin);
 router.delete("/", deleteShuttlePassengersController);
+module.exports = router;
