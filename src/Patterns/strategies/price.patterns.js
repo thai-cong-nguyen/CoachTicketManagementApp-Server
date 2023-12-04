@@ -25,14 +25,14 @@ function blackFridayPrice({ originalPrice }) {
   return originalPrice * 0.9;
 }
 
-const getPriceStrategy = {
+const getPriceStrategies = {
   default: defaultPrice,
   discount: discountPrice,
   blackFriday: blackFridayPrice,
 };
 
 function getPrice({ percentDiscount, originalPrice }, typePromotion) {
-  return getPriceStrategy[typePromotion]({ percentDiscount, originalPrice });
+  return getPriceStrategies[typePromotion]({ percentDiscount, originalPrice });
 }
 
 module.exports = { getPrice };
