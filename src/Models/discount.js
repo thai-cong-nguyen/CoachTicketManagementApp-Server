@@ -28,6 +28,8 @@ module.exports = (sequelize, DataTypes) => {
       expireDate: DataTypes.DATE,
       quantity: DataTypes.INTEGER,
       isSystem: DataTypes.BOOLEAN,
+      minimumpricetoapply: DataTypes.INTEGER,
+      maximumdiscountprice: DataTypes.INTEGER,
     },
     {
       sequelize,

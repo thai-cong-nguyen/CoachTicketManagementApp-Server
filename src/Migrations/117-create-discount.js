@@ -41,6 +41,14 @@ module.exports = {
         type: Sequelize.BOOLEAN,
         defaultValue: false,
       },
+      minimumpricetoapply: {
+        allowNull: true,
+        type: Sequelize.INTEGER,
+      },
+      maximumdiscountprice: {
+        allowNull: true,
+        type: Sequelize.INTEGER,
+      },
     });
   },
   async down(queryInterface, Sequelize) {
