@@ -11,7 +11,7 @@ const getAllTrips = async ({
   order,
   from,
   to,
-  departurePlace,
+  startPlace,
   arrivalPlace,
   departureTime,
   roundTime,
@@ -34,20 +34,25 @@ const getAllTrips = async ({
     let roundTripQuery = {};
     // Add conditions for "from" and "to" places.
     if (from) {
-      query["$StartPlaceData.placeName$"] = from;
+      query["$RouteData.departurePlace$"] = from;
       if (roundTrip === "true")
-        roundTripQuery["$ArrivalPlaceData.placeName$"] = from;
+        roundTripQuery["$RouteData.arrivalPlace$"] = from;
     }
     if (to) {
-      query["$ArrivalPlaceData.placeName$"] = to;
+      query["$RouteData.arrivalPlace$"] = to;
       if (roundTrip === "true")
-        roundTripQuery["$StartPlaceData.placeName$"] = to;
+        roundTripQuery["$RouteData.departurePlace$"] = to;
     }
-    if (departurePlace) {
-      query["$RouteData.departurePlace$"] = departurePlace;
+    query[Op.and] = [];
+    if (startPlace) {
+      query[Op.and].push({
+        "$StartPlaceData.placeName$": startPlace,
+      });
     }
     if (arrivalPlace) {
-      query["$RouteData.arrivalPlace$"] = arrivalPlace;
+      query[Op.and].push({
+        "$ArrivalPlaceData.placeName$": arrivalPlace,
+      });
     }
     // Add conditions for departure time (ignoring time).
     let suggestedTrips = null;
@@ -119,11 +124,17 @@ const getAllTrips = async ({
         const serviceCoachSuggestedTrip = await db.CoachService.findAll({
           where: { coachId: trip.coachId },
           include: [
-            { model: db.Coach, as: "CoachData" },
-            { model: db.Service, as: "ServiceData" },
+            {
+              model: db.Service,
+              as: "ServiceData",
+              attribute: ["serviceName"],
+            },
           ],
         });
-        trip.ServiceData = serviceCoachSuggestedTrip;
+        const serviceSuggestedTrip = serviceCoachSuggestedTrip.map(
+          (service) => service.ServiceData.serviceName
+        );
+        trip.ServiceData = serviceSuggestedTrip;
       });
     }
 
@@ -174,10 +185,16 @@ const getAllTrips = async ({
           const serviceCoachTrip = await db.CoachService.findAll({
             where: { coachId: data.coachId },
             include: [
-              { model: db.Coach, as: "CoachData" },
-              { model: db.Service, as: "ServiceData" },
+              {
+                model: db.Service,
+                as: "ServiceData",
+                attribute: ["serviceName"],
+              },
             ],
           });
+          const serviceTrip = serviceCoachTrip.map(
+            (service) => service.ServiceData.serviceName
+          );
           const countedReservations = await db.Reservation.count({
             where: {
               scheduleId: data.id,
@@ -188,7 +205,7 @@ const getAllTrips = async ({
             data.CoachData.capacity - countedReservations
           );
           data.remainingSlot = remainingSlot;
-          data.ServiceData = serviceCoachTrip;
+          data.ServiceData = serviceTrip;
         })
       );
 
@@ -206,18 +223,31 @@ const getAllTrips = async ({
               data.ArrivalPlaceData.placeName;
             roundTripQuery["$ArrivalPlaceData.placeName$"] =
               data.StartPlaceData.placeName;
-            roundTripQuery[Op.and] = [
-              {
-                "$ArrivalPlaceData.placeName$": data.StartPlaceData.placeName,
-                "$RouteData.departurePlace$": data.RouteData.arrivalPlace,
-              },
-            ];
-            const isRoundTrip = await db.Schedule.findOne({
+            roundTripQuery["$RouteData.arrivalPlace$"] =
+              data.RouteData.departurePlace;
+            roundTripQuery["$RouteData.departurePlace$"] =
+              data.RouteData.arrivalPlace;
+            // roundTripQuery[Op.and] = [
+            //   {
+            //     "$StartPlaceData.placeName$": data.ArrivalPlaceData.placeName,
+            //     "$ArrivalPlaceData.placeName$": data.StartPlaceData.placeName,
+            //   },
+            // ];
+            const queryRoundTripTime = roundTime
+              ? (roundTripQuery.departureTime = {
+                  [Op.gt]: data.arrivalTime,
+                  [Op.and]: [
+                    literal(
+                      `date_trunc('day', "departureTime") = '${new Date(
+                        roundTime
+                      ).toISOString()}'::timestamp`
+                    ),
+                  ],
+                })
+              : (roundTripQuery.departureTime = { [Op.gt]: data.arrivalTime });
+            const isRoundTrip = await db.Schedule.findAndCountAll({
               where: {
                 ...roundTripQuery,
-                departureTime: {
-                  [Op.gt]: data.arrivalTime,
-                },
               },
               ...queries,
               include: [
@@ -255,19 +285,29 @@ const getAllTrips = async ({
                 },
               ],
             });
-
-            if (isRoundTrip) {
-              const serviceCoachRoundTrip = await db.CoachService.findAll({
-                where: { coachId: isRoundTrip.coachId },
-                include: [
-                  { model: db.Coach, as: "CoachData" },
-                  { model: db.Service, as: "ServiceData" },
-                ],
-              });
-              data.roundTrip = isRoundTrip;
-              data.roundTrip.ServiceData = serviceCoachRoundTrip;
+            data.roundTrip = [];
+            if (isRoundTrip.count > 0) {
+              await Promise.all(
+                isRoundTrip.rows.map(async (trip) => {
+                  const serviceCoachRoundTrip = await db.CoachService.findAll({
+                    where: { coachId: trip.coachId },
+                    include: [
+                      {
+                        model: db.Service,
+                        as: "ServiceData",
+                        attribute: ["serviceName"],
+                      },
+                    ],
+                  });
+                  const serviceRoundTrip = serviceCoachRoundTrip.map(
+                    (service) => service.ServiceData.serviceName
+                  );
+                  trip.ServiceData = serviceRoundTrip;
+                  data.roundTrip.push(trip);
+                })
+              );
             }
-            return isRoundTrip != null ? data : null;
+            return isRoundTrip.count > 0 ? data : null;
           })
         );
       }
