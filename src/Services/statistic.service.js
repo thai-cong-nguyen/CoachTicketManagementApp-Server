@@ -16,7 +16,6 @@ const getStatisticCustomersBySchedule = async (rawData) => {
         if (!res.hasOwnProperty(schedule)) {
           res[schedule.id] = 0;
         }
-        console.log(res);
         const amountOfCustomers = await db.Reservation.count({
           where: { scheduleId: schedule.id, status: "4" },
           distinct: true,
@@ -60,30 +59,6 @@ const getStatisticCustomersByMonths = async ({ year }) => {
         col: "passengerId",
       });
       res[month] = amountOfCustomers;
-      // const amountOfCustomers = await db.Reservation.count({
-      //   where: {
-      //     [Op.and]: [
-      //       db.Sequelize.where(
-      //         db.Sequelize.fn(
-      //           "EXTRACT",
-      //           db.Sequelize.literal("MONTH FROM reservationDate")
-      //         ),
-      //         month
-      //       ),
-      //       db.Sequelize.where(
-      //         db.Sequelize.fn(
-      //           "EXTRACT",
-      //           db.Sequelize.col("YEAR FROM reservationDate")
-      //         ),
-      //         year ? year : new Date().getFullYear()
-      //       ),
-      //     ],
-      //     status: "2",
-      //   },
-      //   distinct: true,
-      //   col: "passengerId",
-      // });
-      // res.month = amountOfCustomers;
     }
     return apiReturns.success(200, "Get Successfully", res);
   } catch (error) {
@@ -136,7 +111,7 @@ const getStatisticsRevenueBySchedule = async (rawData) => {
     });
     let res = {};
     if (schedules.count <= 0) {
-      return apiReturns.error(404, "No data found for Trips");
+      throw new Error("No data found for Trips");
     }
     await Promise.all(
       schedules.rows.map(async (schedule) => {
@@ -144,18 +119,27 @@ const getStatisticsRevenueBySchedule = async (rawData) => {
           res[schedule.id] = 0;
         }
         const reservations = await db.Reservation.findAndCountAll({
-          where: { schedule: schedule.id, status: 2 },
+          where: { scheduleId: schedule.id, status: "1" },
           include: [{ model: db.Discount, as: "DiscountData" }],
         });
-        await reservations.rows.map((reservation) => {
-          res[schedule.id] +=
-            schedule.price *
-            (1 - (reservation.discountId ? reservation.DiscountData.value : 0));
-        });
+        console.log(reservations);
+        if (reservations.count > 0) {
+          await Promise.all(
+            reservations.rows.map((reservation) => {
+              res[schedule.id] +=
+                schedule.price *
+                (1 -
+                  (reservation.discountId
+                    ? reservation.DiscountData.value
+                    : 0));
+            })
+          );
+        }
       })
     );
+    return apiReturns.success(200, "Get Revenue By Schedule Successfully", res);
   } catch (error) {
-    console.error(error.message);
+    console.error(error);
     return apiReturns.error(400, error.message);
   }
 };

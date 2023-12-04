@@ -22,3 +22,4 @@ router.use(isAdmin);
 router.post("/", createNewShuttleRouteController);
 router.patch("/:shuttleRouteId", updateShuttleRouteController);
 router.delete("/:shuttleRouteId", deleteShuttleRouteController);
+module.exports = router;

@@ -61,11 +61,11 @@ const apiWebRoutes = (app) => {
   // Service Router
   app.use("/api/services", serviceRouter);
   // Shuttle Router
-  app.use("api/shuttles", shuttleRouter);
+  app.use("/api/shuttles", shuttleRouter);
   // Shuttle Route Router
-  app.use("api/shuttleRoutes", shuttleRouter);
+  app.use("/api/shuttleRoutes", shuttleRouteRouter);
   // Shuttle PassengerRouter
-  app.use("api/shuttlePassengers", shuttleRouter);
+  app.use("/api/shuttlePassengers", shuttlePassengerRouter);
 
   return app.use(notFoundError);
 };
