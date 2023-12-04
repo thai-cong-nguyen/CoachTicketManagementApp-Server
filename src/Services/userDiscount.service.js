@@ -24,13 +24,13 @@ module.exports = {
       if (discountId) query.discountId = discountId;
       const userDiscount = await db.UserDiscount.findAndCountAll({
         where: query,
-        includes: [
+        ...queries,
+        include: [
           {
             model: db.Discount,
             as: "DiscountData",
           },
         ],
-        ...queries,
       });
       return apiReturns.success(200, "Get Successfully", userDiscount);
     } catch (error) {
