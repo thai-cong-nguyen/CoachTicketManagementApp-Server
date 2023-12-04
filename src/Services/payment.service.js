@@ -9,7 +9,7 @@ const { getPrice } = require("../Patterns/strategies/price.patterns");
 const paymentGateway = async (rawData) => {
   try {
     const { discountId, reservations, cost } = rawData.body;
-    let totalCost = getPrice["defaultPrice"]({ originalPrice: cost });
+    let totalCost = getPrice({ originalPrice: cost }, "default");
     const result = await db.sequelize.transaction(async (tx) => {
       if (discountId) {
         const discount = await db.UserDiscount.findOne({
@@ -29,22 +29,24 @@ const paymentGateway = async (rawData) => {
             transaction: tx,
           }
         );
-        totalCost = getPrice["discount"]({
+        totalCost = getPrice({
           percentDiscount: discount.value,
           originalPrice: cost,
+        })["discount"];
+      }
+      if (reservations) {
+        reservations.forEach(async (reservationId) => {
+          const reservation = await db.Reservation.findByPk(reservationId);
+          if (!reservation) {
+            throw new Error("Can not find reservation");
+          } else {
+            await db.Reservation.update(
+              { status: "3" },
+              { where: { id: reservation.id }, transaction: tx }
+            );
+          }
         });
       }
-      reservations.forEach(async (reservationId) => {
-        const reservation = await db.Reservation.findByPk(reservationId);
-        if (!reservation) {
-          throw new Error("Can not find reservation");
-        } else {
-          await db.Reservation.update(
-            { status: "3" },
-            { where: { id: reservation.id }, transaction: tx }
-          );
-        }
-      });
     });
 
     // Use an existing Customer ID if this is a returning customer.
