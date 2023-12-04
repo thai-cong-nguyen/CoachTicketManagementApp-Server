@@ -9,7 +9,7 @@ const { getPrice } = require("../Patterns/strategies/price.patterns");
 const paymentGateway = async (rawData) => {
   try {
     const { discountId, reservations, cost } = rawData.body;
-    let totalCost = getPrice({ originalPrice: cost }, "defaultPrice");
+    let totalCost = getPrice["defaultPrice"]({ originalPrice: cost });
     const result = await db.sequelize.transaction(async (tx) => {
       if (discountId) {
         const discount = await db.UserDiscount.findOne({
@@ -29,10 +29,10 @@ const paymentGateway = async (rawData) => {
             transaction: tx,
           }
         );
-        totalCost = getPrice(
-          { percentDiscount: discount.value, originalPrice: cost },
-          "discount"
-        );
+        totalCost = getPrice["discount"]({
+          percentDiscount: discount.value,
+          originalPrice: cost,
+        });
       }
       reservations.forEach(async (reservationId) => {
         const reservation = await db.Reservation.findByPk(reservationId);
