@@ -16,15 +16,15 @@ module.exports = (sequelize, DataTypes) => {
       });
       // has many
       Places.hasMany(models.Shuttle, {
-        foreignKey: "departurePlaceId",
+        foreignKey: "departurePlace",
         onDelete: "CASCADE",
       });
       Places.hasMany(models.Shuttle, {
-        foreignKey: "arrivalPlaceId",
+        foreignKey: "arrivalPlace",
         onDelete: "CASCADE",
       });
       Places.hasMany(models.ShuttleRoutes, {
-        foreignKey: "departurePlaceId",
+        foreignKey: "departurePlace",
         onDelete: "CASCADE",
       });
       Places.hasMany(models.Schedule, {

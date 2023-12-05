@@ -29,24 +29,35 @@ const createNewRoute = async (rawData) => {
   try {
     const { places, ...data } = rawData.body;
     const route = await db.Route.create(data);
-    await Promise.all(
-      places.map(async (place) => {
-        await db.Places.create({
-          routeId: route.id,
-          placeName: place.startPlace,
-          isPickUpPlace: "1",
-          placeLat: place.placeLat ? place.placeLat : null,
-          placeLng: place.placeLng ? place.placeLng : null,
-        });
-        await db.Places.create({
-          routeId: route.id,
-          placeName: place.endPlace,
-          isPickUpPlace: "0",
-          placeLat: place.placeLat ? place.placeLat : null,
-          placeLng: place.placeLng ? place.placeLng : null,
-        });
-      })
-    );
+    if (!route) {
+      throw new Error("Could not create route");
+    }
+    if (places.startPlace) {
+      await Promise.all(
+        places.startPlace.map(async (place) => {
+          await db.Places.create({
+            routeId: route.id,
+            placeName: place.placeName,
+            isPickUpPlace: "1",
+            placeLat: place.placeLat ? place.placeLat : null,
+            placeLng: place.placeLng ? place.placeLng : null,
+          });
+        })
+      );
+    }
+    if (places.endPlace) {
+      await Promise.all(
+        places.endPlace.map(async (place) => {
+          await db.Places.create({
+            routeId: route.id,
+            placeName: place.placeName,
+            isPickUpPlace: "0",
+            placeLat: place.placeLat ? place.placeLat : null,
+            placeLng: place.placeLng ? place.placeLng : null,
+          });
+        })
+      );
+    }
     return apiReturns.success(200, "Create a new route successfully", route);
   } catch (error) {
     console.error(error.message);
