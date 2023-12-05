@@ -23,6 +23,6 @@ router.use(isAdmin);
 router.get("/", getAllCoachesController);
 router.post("/", uploadImageMiddleware, createNewCoachController);
 router.patch("/:coachId", uploadImageMiddleware, updateCoachController);
-router.post("/:coachId", deleteCoachController);
+router.delete("/:coachId", deleteCoachController);
 
 module.exports = router;
