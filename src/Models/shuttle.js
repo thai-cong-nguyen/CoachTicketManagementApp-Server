@@ -30,12 +30,12 @@ module.exports = (sequelize, DataTypes) => {
         as: "CoachAssistantData",
       });
       Shuttle.belongsTo(models.Places, {
-        foreignKey: "departurePlaceId",
+        foreignKey: "departurePlace",
         targetKey: "id",
         as: "DeparturePlaceData",
       });
       Shuttle.belongsTo(models.Places, {
-        foreignKey: "arrivalPlaceId",
+        foreignKey: "arrivalPlace",
         targetKey: "id",
         as: "ArrivalPlaceData",
       });
@@ -52,8 +52,8 @@ module.exports = (sequelize, DataTypes) => {
       scheduleId: DataTypes.BIGINT,
       driverId: DataTypes.BIGINT,
       coachAssistantId: DataTypes.BIGINT,
-      departurePlaceId: DataTypes.BIGINT,
-      arrivalPlaceId: DataTypes.BIGINT,
+      departurePlace: DataTypes.BIGINT,
+      arrivalPlace: DataTypes.BIGINT,
       distance: DataTypes.FLOAT,
       duration: DataTypes.FLOAT,
       passengerQuantity: DataTypes.INTEGER,

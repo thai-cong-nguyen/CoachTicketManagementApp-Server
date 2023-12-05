@@ -12,7 +12,7 @@ const getAllShuttleRoutes = async ({ page, limit, order, ...query }) => {
     queries.offset = offset * flimit;
     queries.limit = flimit;
     if (order) queries.order = order;
-    const shuttleRoutes = await db.ShuttleRoute.findAndCountAll({
+    const shuttleRoutes = await db.ShuttleRoutes.findAndCountAll({
       where: query,
       ...queries,
       include: [
@@ -51,7 +51,7 @@ const createNewShuttleRoute = async (rawData) => {
     if (!place) {
       throw new Error("Departure Place is not existed");
     }
-    await db.ShuttleRoute.create({
+    await db.ShuttleRoutes.create({
       shuttleId,
       departureTime,
       status,
@@ -70,7 +70,7 @@ const updateShuttleRoute = async (rawData) => {
   try {
     const id = rawData.params.id;
     const data = rawData.body;
-    const shuttleRoute = await db.ShuttleRoute.update(data, {
+    const shuttleRoute = await db.ShuttleRoutes.update(data, {
       where: { id: id },
     });
     return apiReturns.success(200, "Update Successfully", shuttleRoute);
@@ -83,11 +83,11 @@ const updateShuttleRoute = async (rawData) => {
 const deleteShuttleRoute = async (rawData) => {
   try {
     const shuttleRouteId = rawData.params.shuttleRouteId;
-    const shuttleRoute = await db.ShuttleRoute.findByPk(shuttleRouteId);
+    const shuttleRoute = await db.ShuttleRoutes.findByPk(shuttleRouteId);
     if (!shuttleRoute) {
       throw new Error("Shuttle Route is not existed");
     }
-    await db.ShuttleRoute.destroy({ where: { id: shuttleRouteId } });
+    await db.ShuttleRoutes.destroy({ where: { id: shuttleRouteId } });
     return apiReturns.success(200, "Delete Successfully");
   } catch (error) {
     console.error(error);

@@ -3,10 +3,14 @@ const bcrypt = require("bcrypt");
 const { Op } = require("sequelize");
 const db = require("../Models/index");
 const apiReturns = require("../Helpers/apiReturns.helper");
+const { getPrice } = require("../Patterns/strategies/price.patterns");
 
 const getStatisticCustomersBySchedule = async (rawData) => {
   try {
-    const schedules = await db.Schedule.findAndCountAll({ attributes: ["id"] });
+    const schedules = await db.Schedule.findAndCountAll({
+      where: { status: "1" },
+      attributes: ["id"],
+    });
     let res = {};
     if (schedules.count <= 0) {
       return apiReturns.error(404, "No data found for Trips");
@@ -17,7 +21,7 @@ const getStatisticCustomersBySchedule = async (rawData) => {
           res[schedule.id] = 0;
         }
         const amountOfCustomers = await db.Reservation.count({
-          where: { scheduleId: schedule.id, status: "4" },
+          where: { scheduleId: schedule.id, status: "1" },
           distinct: true,
           col: "passengerId",
         });
@@ -52,7 +56,7 @@ const getStatisticCustomersByMonths = async ({ year }) => {
               [Op.gte]: startDate,
               [Op.lt]: endDate,
             }),
-            { status: "4" },
+            { status: "1" },
           ],
         },
         distinct: true,
@@ -90,7 +94,7 @@ const getStatisticCustomersByYears = async ({ fromYear, toYear }) => {
               year ? year : new Date().getFullYear()
             ),
           ],
-          status: "4",
+          status: "1",
         },
         distinct: true,
         col: "passengerId",
@@ -107,6 +111,7 @@ const getStatisticCustomersByYears = async ({ fromYear, toYear }) => {
 const getStatisticsRevenueBySchedule = async (rawData) => {
   try {
     const schedules = await db.Schedule.findAndCountAll({
+      where: { status: "1" },
       attributes: ["id", "price"],
     });
     let res = {};
@@ -161,7 +166,7 @@ const getStatisticsRevenueByMonths = async ({ year }) => {
               year ? year : new Date().getFullYear()
             ),
           ],
-          status: "2",
+          status: "1",
         },
         include: [
           { model: db.Schedule, as: "ScheduleData" },
@@ -207,7 +212,7 @@ const getStatisticsRevenueByYears = async ({ fromYear, toYear }) => {
               year ? year : new Date().getFullYear()
             ),
           ],
-          status: "2",
+          status: "1",
         },
         include: [
           { model: db.Schedule, as: "ScheduleData" },

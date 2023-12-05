@@ -15,7 +15,7 @@ module.exports = (sequelize, DataTypes) => {
         as: "ShuttleData",
       });
       ShuttleRoutes.belongsTo(models.Places, {
-        foreignKey: "departurePlaceId",
+        foreignKey: "departurePlace",
         targetKey: "id",
         as: "DeparturePlaceData",
       });
@@ -30,7 +30,7 @@ module.exports = (sequelize, DataTypes) => {
     {
       shuttleId: DataTypes.BIGINT,
       departureTime: DataTypes.DATE,
-      departurePlaceId: DataTypes.BIGINT,
+      departurePlace: DataTypes.BIGINT,
       status: DataTypes.ENUM("0", "1", "2", "3"),
       /**
          * 0 [note: 'processing']

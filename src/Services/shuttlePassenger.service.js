@@ -18,7 +18,7 @@ module.exports = {
         ...queries,
         include: [
           {
-            model: db.ShuttleRoute,
+            model: db.ShuttleRoutes,
             as: "ShuttleRouteData",
             include: [{ model: db.Shuttle, as: "ShuttleData" }],
           },
