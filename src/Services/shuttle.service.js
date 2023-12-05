@@ -42,6 +42,14 @@ const getAllShuttle = async ({ page, limit, order, ...query }) => {
         },
       ],
     });
+    await Promise.all(
+      shuttles.rows.map(async (shuttle) => {
+        const shuttleRoute = await db.ShuttleRoutes.findAll({
+          where: { shuttleId: shuttle.id },
+        });
+        shuttle.ShuttleRouteData = shuttleRoute;
+      })
+    );
     return apiReturns.success(200, "Get Successfully", shuttles);
   } catch (error) {
     console.error(error.message);
