@@ -3,6 +3,9 @@ const router = express.Router();
 
 const { verifyJWT } = require("../Middlewares/JWT.middleware");
 const {
+  uploadImageMiddleware,
+} = require("../Middlewares/uploadImage.middleware");
+const {
   createNewCoachController,
   getAllCoachesController,
   updateCoachController,
@@ -18,8 +21,8 @@ const {
 router.use(verifyJWT);
 router.use(isAdmin);
 router.get("/", getAllCoachesController);
-router.post("/", createNewCoachController);
-router.patch("/:coachId", updateCoachController);
+router.post("/", uploadImageMiddleware, createNewCoachController);
+router.patch("/:coachId", uploadImageMiddleware, updateCoachController);
 router.post("/:coachId", deleteCoachController);
 
 module.exports = router;

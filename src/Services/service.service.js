@@ -39,7 +39,35 @@ const getAllServices = async ({ page, limit, order, ...query }) => {
 
 const getServicesOfCoaches = async (rawData) => {
   try {
-  } catch (error) {}
+    const coachId = rawData.params.coachId;
+    const coach = await db.Coach.findByPk(coachId);
+    if (!coach) {
+      throw new Error("Could not find coach");
+    }
+    const coachServices = await db.CoachService.findAndCountAll({
+      where: { coachId: coachId },
+      include: [
+        {
+          model: db.Service,
+          as: "ServiceData",
+          attribute: ["serviceName"],
+        },
+      ],
+    });
+    let res = {
+      services: [],
+    };
+    if (coachServices.count < 0) {
+      const services = coachServices.map(
+        (service) => service.ServiceData.serviceName
+      );
+      res.services = services;
+    }
+    return apiReturns.success(200, "Get Coach Services Successfully", res);
+  } catch (error) {
+    console.error(error);
+    return apiReturns.error(400, error.message);
+  }
 };
 
 const removeServiceOutOfCoach = async ({ coachId, serviceId }) => {

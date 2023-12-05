@@ -3,15 +3,50 @@ const bcrypt = require("bcrypt");
 const { Op } = require("sequelize");
 const db = require("../Models/index");
 const apiReturns = require("../Helpers/apiReturns.helper");
+const { initializeApp } = require("firebase/app");
+const { firebaseConfig } = require("../Configs/firebase.config");
+const {
+  getStorage,
+  ref,
+  getDownloadURL,
+  uploadBytesResumable,
+} = require("firebase/storage");
+
+initializeApp(firebaseConfig);
+
+const storage = getStorage();
 
 module.exports = {
   createNewCoach: async (rawData) => {
     try {
-      const { services, typeDetails, ...data } = rawData.body;
+      const { services, ...data } = rawData.body;
+      const file = rawData.file;
+      // upload coach's image
+      if (file) {
+        const dateTime = new Date().toLocaleString("en-US", {
+          timeZone: "Asia/ho_chi_minh",
+        });
+        const storageRef = ref(
+          storage,
+          `images/${file.originalname + "       " + dateTime}`
+        );
+        const metaData = {
+          contentType: file.mimetype,
+          cacheControl: "public, max-age=31536000",
+        };
+        // Upload the file in the bucket storage
+        const snapshot = await uploadBytesResumable(
+          storageRef,
+          file.buffer,
+          metaData
+        );
+        const downloadURL = await getDownloadURL(snapshot.ref);
+        data.image = downloadURL;
+      }
       const coach = await db.Coach.create(data);
-      if (data.services) {
+      if (services) {
         await Promise.all(
-          data.services.map(async (service) => {
+          services.map(async (service) => {
             await db.CoachService.create({
               coachId: coach.id,
               serviceId: service,
@@ -19,7 +54,7 @@ module.exports = {
           })
         );
       }
-      return apiReturns.success(200, "Create new Coach Successful", coach);
+      return apiReturns.success(200, "Created new Coach Successful", coach);
     } catch (error) {
       console.error(error.message);
       return apiReturns.error(400, error.message);
@@ -49,9 +84,32 @@ module.exports = {
     try {
       const coachId = rawData.params.coachId;
       const data = rawData.body;
-      const coach = await db.Coach.findByPK(coachId);
+      const file = await rawData.file;
+      const coach = await db.Coach.findByPk(coachId);
       if (!coach) {
         throw new Error("Coaches Not Found");
+      }
+      // uploa coach's image
+      if (file) {
+        const dateTime = new Date().toLocaleString("en-US", {
+          timeZone: "Asia/ho_chi_minh",
+        });
+        const storageRef = ref(
+          storage,
+          `images/${file.originalname + "       " + dateTime}`
+        );
+        const metaData = {
+          contentType: file.mimetype,
+          cacheControl: "public, max-age=31536000",
+        };
+        // Upload the file in the bucket storage
+        const snapshot = await uploadBytesResumable(
+          storageRef,
+          file.buffer,
+          metaData
+        );
+        const downloadURL = await getDownloadURL(snapshot.ref);
+        data.image = downloadURL;
       }
       const updatedCoach = await db.Coach.update(data, {
         where: { id: coachId },
@@ -70,7 +128,7 @@ module.exports = {
     try {
       const coachId = rawData.params.coachId;
       const data = rawData.body;
-      const coach = await db.Coach.findByPK(coachId);
+      const coach = await db.Coach.findByPk(coachId);
       if (!coach) {
         throw new Error("Coaches Not Found");
       }
