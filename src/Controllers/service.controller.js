@@ -1,6 +1,7 @@
 const {
   getAllServices,
   createNewService,
+  getServicesOfCoaches,
   removeServiceOutOfCoach,
   addServiceForCoach,
   deleteServiceById,
@@ -20,6 +21,15 @@ module.exports = {
   createNewServiceController: async (req, res) => {
     try {
       const response = await createNewService(req);
+      return res.status(response.code).send(response);
+    } catch (error) {
+      console.error(error);
+      return res.status(500).send("Something went wrong");
+    }
+  },
+  getServicesOfCoachesController: async (req, res) => {
+    try {
+      const response = await getServicesOfCoaches(req);
       return res.status(response.code).send(response);
     } catch (error) {
       console.error(error);
