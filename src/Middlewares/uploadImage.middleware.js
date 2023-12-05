@@ -1,4 +1,5 @@
 require("dotenv").config();
+const multer = require("multer");
 const upload = multer({ storage: multer.memoryStorage() });
 
 const uploadImageMiddleware = async (req, res, next) => {
