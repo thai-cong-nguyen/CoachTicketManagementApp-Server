@@ -23,10 +23,6 @@ module.exports = (sequelize, DataTypes) => {
         foreignKey: "arrivalPlace",
         onDelete: "CASCADE",
       });
-      Places.hasMany(models.ShuttleRoutes, {
-        foreignKey: "departurePlace",
-        onDelete: "CASCADE",
-      });
       Places.hasMany(models.Schedule, {
         foreignKey: "startPlace",
         onDelete: "CASCADE",
