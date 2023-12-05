@@ -26,9 +26,8 @@ const getAllTrips = async ({
       nest: true,
       limit: +limit || +process.env.PAGINATION_LIMIT,
       offset:
-        !page || +page <= 1
-          ? 0
-          : +page - 1 * (+limit || +process.env.PAGINATION_LIMIT),
+        (!page || +page <= 1 ? 0 : +page - 1) *
+        (+limit || +process.env.PAGINATION_LIMIT),
       order: order || undefined,
     };
     let roundTripQuery = {};
