@@ -57,7 +57,8 @@ const deleteStaff = async (rawData) => {
 
 const createNewStaff = async (rawData) => {
   try {
-    const { userName, password, fullName, email, phoneNumber } = rawData.body;
+    const { userName, password, fullName, email, phoneNumber, positionId } =
+      rawData.body;
     const isStaffExisted = await db.Staff.findOne({
       where: {
         [Op.or]: { userName: userName, email: email, phoneNumber: phoneNumber },
@@ -66,14 +67,24 @@ const createNewStaff = async (rawData) => {
     if (isStaffExisted) {
       throw new Error(`Staff already exists`);
     }
-    const staff = await db.Staff.create({
-      userName,
-      password: await hashPassword(password),
-      fullName: fullName,
-      email: email,
-      phoneNumber: phoneNumber,
+    await db.Sequelize.Transaction(async (tx) => {
+      const userAccount = await db.UserAccount.create({
+        userName,
+        password: await hashPassword(password),
+        roleId: "2",
+      });
+      if (!userAccount) {
+        throw new Error("Can not create user account");
+      }
+      const staff = await db.Staff.create({
+        fullName: fullName,
+        email: email,
+        phoneNumber: phoneNumber,
+        userId: userAccount.id,
+        positionId,
+      });
     });
-    return apiReturns.success(200, "Create Staff Successfully", staff);
+    return apiReturns.success(200, "Create Staff Successfully");
   } catch (error) {
     console.error(error.message);
     return apiReturns.error(400, error.message);
