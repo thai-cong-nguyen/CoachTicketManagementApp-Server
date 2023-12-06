@@ -4,6 +4,19 @@ const { Op } = require("sequelize");
 const db = require("../Models/index");
 const apiReturns = require("../Helpers/apiReturns.helper");
 
+const shuttleRouteForShuttle = async (shuttles) => {
+  if (!shuttles) return [];
+  await Promise.all(
+    shuttles.rows.map(async (shuttle) => {
+      const shuttleRoute = await db.ShuttleRoutes.findAll({
+        where: { shuttleId: shuttle.id },
+      });
+      shuttle.ShuttleRouteData = shuttleRoute;
+    })
+  );
+  return shuttles;
+};
+
 const getAllShuttle = async ({ page, limit, order, ...query }) => {
   try {
     const queries = { raw: true, nest: true };
@@ -42,15 +55,8 @@ const getAllShuttle = async ({ page, limit, order, ...query }) => {
         },
       ],
     });
-    await Promise.all(
-      shuttles.rows.map(async (shuttle) => {
-        const shuttleRoute = await db.ShuttleRoutes.findAll({
-          where: { shuttleId: shuttle.id },
-        });
-        shuttle.ShuttleRouteData = shuttleRoute;
-      })
-    );
-    return apiReturns.success(200, "Get Successfully", shuttles);
+    const res = await shuttleRouteForShuttle(shuttles);
+    return apiReturns.success(200, "Get Successfully", res);
   } catch (error) {
     console.error(error.message);
     return apiReturns.error(400, error.message);
@@ -95,6 +101,7 @@ const deleteShuttle = async (rawData) => {
 };
 
 module.exports = {
+  shuttleRouteForShuttle,
   getAllShuttle,
   createNewShuttle,
   updateShuttle,
