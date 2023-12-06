@@ -131,12 +131,15 @@ const getStatisticsRevenueBySchedule = async (rawData) => {
         if (reservations.count > 0) {
           await Promise.all(
             reservations.rows.map((reservation) => {
-              res[schedule.id] +=
-                schedule.price *
-                (1 -
-                  (reservation.discountId
-                    ? reservation.DiscountData.value
-                    : 0));
+              res[schedule.id] += reservation.discountId
+                ? getPrice(
+                    {
+                      percentDiscount: reservation.DiscountData.value,
+                      originalPrice: schedule.price,
+                    },
+                    "discount"
+                  )
+                : getPrice({ originalPrice: schedule.price }, "default");
             })
           );
         }
@@ -178,9 +181,18 @@ const getStatisticsRevenueByMonths = async ({ year }) => {
       }
       await Promise.all(
         reservations.rows.map(async (reservation) => {
-          res[month] +=
-            reservation.ScheduleData.price *
-            (1 - (reservation.discountId ? reservation.DiscountData.value : 0));
+          res[month] += reservation.discountId
+            ? getPrice(
+                {
+                  percentDiscount: reservation.DiscountData.value,
+                  originalPrice: reservation.ScheduleData.price,
+                },
+                "discount"
+              )
+            : getPrice(
+                { originalPrice: reservation.ScheduleData.price },
+                "default"
+              );
         })
       );
     }
@@ -224,9 +236,18 @@ const getStatisticsRevenueByYears = async ({ fromYear, toYear }) => {
       }
       await Promise.all(
         reservations.rows.map(async (reservation) => {
-          res[month] +=
-            reservation.ScheduleData.price *
-            (1 - (reservation.discountId ? reservation.DiscountData.value : 0));
+          res[year] += reservation.discountId
+            ? getPrice(
+                {
+                  percentDiscount: reservation.DiscountData.value,
+                  originalPrice: reservation.ScheduleData.price,
+                },
+                "discount"
+              )
+            : getPrice(
+                { originalPrice: reservation.ScheduleData.price },
+                "default"
+              );
         })
       );
     }

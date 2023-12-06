@@ -3,6 +3,7 @@ const {
   updateStaff,
   createNewStaff,
   deleteStaff,
+  getWorkOfStaff,
 } = require("../Services/staff.service");
 
 exports.getAllStaffsController = async (req, res, next) => {
@@ -36,6 +37,15 @@ exports.updateStaffsControllers = async (req, res, next) => {
 exports.createNewStaffControllers = async (req, res, next) => {
   try {
     const response = await createNewStaff(req);
+    return res.status(response.code).send(response);
+  } catch (error) {
+    console.error(error);
+    return res.status(404).send(error.message);
+  }
+};
+exports.getWorkOfStaffController = async (req, res, next) => {
+  try {
+    const response = await getWorkOfStaff(req);
     return res.status(response.code).send(response);
   } catch (error) {
     console.error(error);
