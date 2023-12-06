@@ -8,6 +8,7 @@ const {
   deleteStaffsByIdController,
   updateStaffsControllers,
   createNewStaffControllers,
+  getWorkOfStaffController,
 } = require("../Controllers/staff.controller");
 
 const {
@@ -20,6 +21,7 @@ const {
 // Staff Router
 router.use(verifyJWT);
 router.get("/", getAllStaffsController);
+router.use("/works", isStaff, getWorkOfStaffController);
 router.use(isAdmin);
 router.post("/", createNewStaffControllers);
 router.delete("/:id", deleteStaffsByIdController);

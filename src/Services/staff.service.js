@@ -4,6 +4,7 @@ const { Op } = require("sequelize");
 const db = require("../Models/index");
 const apiReturns = require("../Helpers/apiReturns.helper");
 const { hashPassword } = require("../Services/auth.service");
+const { getAllTrips } = require("../Services/trip.service");
 
 const getAllStaffs = async ({ page, limit, order, ...query }) => {
   try {
@@ -81,13 +82,35 @@ const createNewStaff = async (rawData) => {
 
 const getWorkOfStaff = async (rawData) => {
   try {
-    const userId = rawData.user.userId;
-    const positionName = rawData.position;
-    const query = { status: "0" };
-
-    const currentTrips = await getAllTrips({ status: "0" });
-    const result = { currentTrips: [], historyTrips: [] };
-  } catch (error) {}
+    const { userId } = rawData.user;
+    const staff = await db.Staff.findOne({ where: { userId: userId } });
+    if (!staff) {
+      throw new Error("No staff found");
+    }
+    const query = {
+      [Op.or]: {
+        driverId: staff.id,
+        coachAssistantId: staff.id,
+      },
+    };
+    const currentTrips = await getAllTrips({ ...query, status: "0" });
+    const historyTrips = await getAllTrips({ ...query, status: "1" });
+    console.log(currentTrips);
+    const result = {
+      currentTrips: currentTrips.data.rows,
+      historyTrips: historyTrips.data.rows,
+    };
+    return apiReturns.success(200, "Get Work of Staff Successfully", result);
+  } catch (error) {
+    console.error(error);
+    return apiReturns.error(400, error.message);
+  }
 };
 
-module.exports = { getAllStaffs, createNewStaff, updateStaff, deleteStaff };
+module.exports = {
+  getAllStaffs,
+  createNewStaff,
+  updateStaff,
+  deleteStaff,
+  getWorkOfStaff,
+};
