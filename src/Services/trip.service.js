@@ -5,6 +5,7 @@ const db = require("../Models/index");
 const apiReturns = require("../Helpers/apiReturns.helper");
 const { countNumberOfPassengerByScheduleId } = require("./schedule.service");
 const { shuttleRouteForShuttle } = require("../Services/shuttle.service");
+const { listServiceNameForCoach } = require("../Services/coach.service");
 
 const getAllTrips = async ({
   page,
@@ -190,19 +191,7 @@ const getAllTrips = async ({
               })
             )
           ).rows;
-          const serviceCoachTrip = await db.CoachService.findAll({
-            where: { coachId: data.coachId },
-            include: [
-              {
-                model: db.Service,
-                as: "ServiceData",
-                attributes: ["serviceName"],
-              },
-            ],
-          });
-          const serviceTrip = serviceCoachTrip.map(
-            (service) => service.ServiceData.serviceName
-          );
+          const serviceTrip = await listServiceNameForCoach(data.coachId);
           const reservations = await db.Reservation.findAndCountAll({
             where: {
               scheduleId: data.id,
@@ -296,18 +285,8 @@ const getAllTrips = async ({
             if (isRoundTrip.count > 0) {
               await Promise.all(
                 isRoundTrip.rows.map(async (trip) => {
-                  const serviceCoachRoundTrip = await db.CoachService.findAll({
-                    where: { coachId: trip.coachId },
-                    include: [
-                      {
-                        model: db.Service,
-                        as: "ServiceData",
-                        attribute: ["serviceName"],
-                      },
-                    ],
-                  });
-                  const serviceRoundTrip = serviceCoachRoundTrip.map(
-                    (service) => service.ServiceData.serviceName
+                  const serviceRoundTrip = await listServiceNameForCoach(
+                    trip.coachId
                   );
                   const reservations = await db.Reservation.findAndCountAll({
                     where: {
@@ -445,7 +424,6 @@ const getPopularTrip = async (rawData) => {
     let res = [];
     await Promise.all(
       sliceTrips.map(async (trip) => {
-        console.log(trip.id);
         const response = await getAllTrips({
           popular: "true",
           roundTrip: "true",
