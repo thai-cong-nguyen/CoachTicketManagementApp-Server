@@ -74,6 +74,9 @@ module.exports = {
         ...queries,
         include: [{ model: db.CoachType, as: "CoachTypeData" }],
       });
+      // await Promise.all(coaches.rows.map(async coach => {
+      //   const services = await db.CoachService.findAndCountAll({})
+      // }));
       return apiReturns.success(200, "Get Coaches Successfully", coaches);
     } catch (error) {
       console.error(error.message);

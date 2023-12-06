@@ -53,7 +53,7 @@ const getAllUserAccounts = async ({ page, limit, order, ...query }) => {
               attributes: { exclude: ["password"] },
             },
           });
-        } else return user;
+        }
       })
     );
     return apiReturns.success(200, "Get Successfully", results);

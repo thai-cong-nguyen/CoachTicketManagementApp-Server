@@ -1,6 +1,7 @@
 const {
   getAllStaffs,
   updateStaff,
+  createNewStaff,
   deleteStaff,
 } = require("../Services/staff.service");
 
@@ -26,6 +27,15 @@ exports.deleteStaffsByIdController = async (req, res, next) => {
 exports.updateStaffsControllers = async (req, res, next) => {
   try {
     const response = await updateStaff(req);
+    return res.status(response.code).send(response);
+  } catch (error) {
+    console.error(error);
+    return res.status(404).send(error.message);
+  }
+};
+exports.createNewStaffControllers = async (req, res, next) => {
+  try {
+    const response = await createNewStaff(req);
     return res.status(response.code).send(response);
   } catch (error) {
     console.error(error);

@@ -7,6 +7,7 @@ const {
   getAllStaffsController,
   deleteStaffsByIdController,
   updateStaffsControllers,
+  createNewStaffControllers,
 } = require("../Controllers/staff.controller");
 
 const {
@@ -20,6 +21,7 @@ const {
 router.use(verifyJWT);
 router.get("/", getAllStaffsController);
 router.use(isAdmin);
+router.post("/", createNewStaffControllers);
 router.delete("/:id", deleteStaffsByIdController);
 router.patch("/:id", updateStaffsControllers);
 

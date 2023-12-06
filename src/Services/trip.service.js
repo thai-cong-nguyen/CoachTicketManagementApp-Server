@@ -4,6 +4,7 @@ const { Op, fn, col, literal, where } = require("sequelize");
 const db = require("../Models/index");
 const apiReturns = require("../Helpers/apiReturns.helper");
 const { countNumberOfPassengerByScheduleId } = require("./schedule.service");
+const { shuttleRouteForShuttle } = require("../Services/shuttle.service");
 
 const getAllTrips = async ({
   page,
@@ -17,6 +18,7 @@ const getAllTrips = async ({
   roundTime,
   roundTrip,
   seats,
+  popular,
   ...query
 }) => {
   try {
@@ -178,33 +180,45 @@ const getAllTrips = async ({
     });
     let finalTrips = null;
     if (trips.count > 0) {
-      // Calculating the remaining slot seats for each trips.
+      // Calculating the remaining slot seats && Adding service in Coach and Seats Data and Shuttle Data for each trips.
       await Promise.all(
         trips.rows.map(async (data) => {
+          data.ShuttleData = (
+            await shuttleRouteForShuttle(
+              await db.Shuttle.findAndCountAll({
+                where: { scheduleId: data.id },
+              })
+            )
+          ).rows;
           const serviceCoachTrip = await db.CoachService.findAll({
             where: { coachId: data.coachId },
             include: [
               {
                 model: db.Service,
                 as: "ServiceData",
-                attribute: ["serviceName"],
+                attributes: ["serviceName"],
               },
             ],
           });
           const serviceTrip = serviceCoachTrip.map(
             (service) => service.ServiceData.serviceName
           );
-          const countedReservations = await db.Reservation.count({
+          const reservations = await db.Reservation.findAndCountAll({
             where: {
               scheduleId: data.id,
             },
+            attributes: ["seatNumber"],
           });
+          const seatsData = reservations.rows.map(
+            (reservation) => reservation.seatNumber
+          );
           const remainingSlot = Math.max(
             0,
-            data.CoachData.capacity - countedReservations
+            data.CoachData.capacity - reservations.count
           );
           data.remainingSlot = remainingSlot;
           data.ServiceData = serviceTrip;
+          data.SeatsData = seatsData;
         })
       );
 
@@ -226,13 +240,7 @@ const getAllTrips = async ({
               data.RouteData.departurePlace;
             roundTripQuery["$RouteData.departurePlace$"] =
               data.RouteData.arrivalPlace;
-            // roundTripQuery[Op.and] = [
-            //   {
-            //     "$StartPlaceData.placeName$": data.ArrivalPlaceData.placeName,
-            //     "$ArrivalPlaceData.placeName$": data.StartPlaceData.placeName,
-            //   },
-            // ];
-            const queryRoundTripTime = roundTime
+            roundTime
               ? (roundTripQuery.departureTime = {
                   [Op.gt]: data.arrivalTime,
                   [Op.and]: [
@@ -301,10 +309,28 @@ const getAllTrips = async ({
                   const serviceRoundTrip = serviceCoachRoundTrip.map(
                     (service) => service.ServiceData.serviceName
                   );
+                  const reservations = await db.Reservation.findAndCountAll({
+                    where: {
+                      scheduleId: trip.id,
+                    },
+                    attributes: ["seatNumber"],
+                  });
+                  const seatsDataRoundTrip = reservations.rows.map(
+                    (reservation) => reservation.seatNumber
+                  );
+                  const remainingSlot = Math.max(
+                    0,
+                    trip.CoachData.capacity - reservations.count
+                  );
+                  trip.remainingSlot = remainingSlot;
+                  trip.SeatsData = seatsDataRoundTrip;
                   trip.ServiceData = serviceRoundTrip;
                   data.roundTrip.push(trip);
                 })
               );
+            }
+            if (popular) {
+              return data;
             }
             return isRoundTrip.count > 0 ? data : null;
           })
@@ -358,42 +384,47 @@ const getSeatTrip = async (rawData) => {
 
 const getPopularTrip = async (rawData) => {
   try {
-    const data = rawData.body;
     let allTrips = await db.Schedule.findAndCountAll({
-      include: [
-        {
-          model: db.Coach,
-          as: "CoachData",
-          include: [
-            {
-              model: db.CoachType,
-              as: "CoachTypeData",
-            },
-          ],
+      where: {
+        departureTime: {
+          [Op.gte]: new Date().toISOString(),
         },
-        {
-          model: db.Route,
-          as: "RouteData",
-        },
-        {
-          model: db.Staff,
-          as: "DriverData",
-          attributes: ["id", "fullName", "phoneNumber", "gender"],
-        },
-        {
-          model: db.Staff,
-          as: "CoachAssistantData",
-          attributes: ["id", "fullName", "phoneNumber", "gender"],
-        },
-        {
-          model: db.Places,
-          as: "StartPlaceData",
-        },
-        {
-          model: db.Places,
-          as: "ArrivalPlaceData",
-        },
-      ],
+      },
+      attributes: ["id"],
+      // include: [
+      //   {
+      //     model: db.Coach,
+      //     as: "CoachData",
+      //     include: [
+      //       {
+      //         model: db.CoachType,
+      //         as: "CoachTypeData",
+      //       },
+      //     ],
+      //   },
+      //   {
+      //     model: db.Route,
+      //     as: "RouteData",
+      //   },
+      //   {
+      //     model: db.Staff,
+      //     as: "DriverData",
+      //     attributes: ["id", "fullName", "phoneNumber", "gender"],
+      //   },
+      //   {
+      //     model: db.Staff,
+      //     as: "CoachAssistantData",
+      //     attributes: ["id", "fullName", "phoneNumber", "gender"],
+      //   },
+      //   {
+      //     model: db.Places,
+      //     as: "StartPlaceData",
+      //   },
+      //   {
+      //     model: db.Places,
+      //     as: "ArrivalPlaceData",
+      //   },
+      // ],
     });
     let mostOfPassenger = 0;
     let scheduleId = null;
@@ -410,7 +441,23 @@ const getPopularTrip = async (rawData) => {
         ? -1
         : 1;
     });
-    return apiReturns.success(200, "Get successfully", allTrips);
+    const sliceTrips = allTrips.rows.slice(0, 5);
+    let res = [];
+    await Promise.all(
+      sliceTrips.map(async (trip) => {
+        console.log(trip.id);
+        const response = await getAllTrips({
+          popular: "true",
+          roundTrip: "true",
+          id: trip.id,
+        });
+        res = [...res, ...response.data.rows];
+      })
+    );
+    return apiReturns.success(200, "Get successfully", {
+      count: res.length,
+      rows: res,
+    });
   } catch (error) {
     console.error(error.message);
     return apiReturns.error(400, error.message);
