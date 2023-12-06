@@ -33,7 +33,7 @@ const getAllUserAccounts = async ({ page, limit, order, ...query }) => {
     });
     if (users.count <= 0)
       return apiReturns.error(401, "User Account not found");
-    const results = await Promise.all(
+    const userAccounts = await Promise.all(
       users.rows.map(async (user) => {
         if (user.roleId === "1") {
           return await db.Passenger.findOne({
@@ -54,8 +54,10 @@ const getAllUserAccounts = async ({ page, limit, order, ...query }) => {
             },
           });
         }
-      })
+        return null;
+      }, [])
     );
+    const results = userAccounts.filter((user) => user !== null);
     return apiReturns.success(200, "Get Successfully", results);
   } catch (error) {
     console.log(error.message);
