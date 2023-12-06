@@ -131,7 +131,7 @@ const getAllTickets = async ({
   }
 };
 
-const getAllTicketsOfUsers = async ({ page, limit, order, userId }) => {
+const getAllTicketsOfUsers = async ({ page, limit, order, ...query }) => {
   try {
     const queries = { raw: true, nest: true };
     const offset = !page || +page <= 1 ? 0 : +page - 1;
@@ -139,13 +139,16 @@ const getAllTicketsOfUsers = async ({ page, limit, order, userId }) => {
     queries.offset = offset * flimit;
     queries.limit = flimit;
     if (order) queries.order = order;
-    queries.userId = userId;
-    const currentTickets = await getTickets({ queries, status: "3" });
+    const currentTickets = await getTickets({
+      queries,
+      status: "3",
+      ...query,
+    });
     const historyTickets = await getTickets({
       queries,
       status: { [Op.notIn]: ["3"] },
+      ...query,
     });
-    console.log(historyTickets);
     const res = { current: currentTickets, history: historyTickets };
     return apiReturns.success(200, "Get Successfully", res);
   } catch (error) {

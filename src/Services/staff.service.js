@@ -79,6 +79,15 @@ const createNewStaff = async (rawData) => {
   }
 };
 
-const getWorkOfStaff = async (rawData) => {};
+const getWorkOfStaff = async (rawData) => {
+  try {
+    const userId = rawData.user.userId;
+    const positionName = rawData.position;
+    const query = { status: "0" };
+
+    const currentTrips = await getAllTrips({ status: "0" });
+    const result = { currentTrips: [], historyTrips: [] };
+  } catch (error) {}
+};
 
 module.exports = { getAllStaffs, createNewStaff, updateStaff, deleteStaff };
