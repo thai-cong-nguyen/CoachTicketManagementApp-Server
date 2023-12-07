@@ -284,7 +284,7 @@ const createBookingTicket = async (rawData) => {
     // shuttle processing
     let shuttlePassenger = [];
     if (shuttle) {
-      const shuttleRoute = await db.ShuttleRoute.findByPk(
+      const shuttleRoute = await db.ShuttleRoutes.findByPk(
         shuttle.shuttleRouteId
       );
       if (!shuttleRoute) {
@@ -297,7 +297,7 @@ const createBookingTicket = async (rawData) => {
         throw new Error("Can not enough seats for shuttle");
       }
       reservations.forEach(async (reservation) => {
-        const [shuttleRoute, created] = await db.ShuttleRoute.findOrCreate({
+        const [shuttleRoute, created] = await db.ShuttleRoutes.findOrCreate({
           where: {
             shuttleRouteId: shuttle.shuttleRouteId,
             reservationId: reservation.id,
@@ -355,7 +355,7 @@ const createBookingTicket = async (rawData) => {
       );
 
       if (roundTrip.shuttle) {
-        const shuttleRoute = await db.ShuttleRoute.findByPk(
+        const shuttleRoute = await db.ShuttleRoutes.findByPk(
           roundTrip.shuttle.shuttleRouteId
         );
         if (!shuttleRoute) {
