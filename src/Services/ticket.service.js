@@ -141,12 +141,12 @@ const getAllTicketsOfUsers = async ({ page, limit, order, ...query }) => {
     if (order) queries.order = order;
     const currentTickets = await getTickets({
       queries,
-      status: "3",
+      status: { [Op.in]: ["0", "1"] },
       ...query,
     });
     const historyTickets = await getTickets({
       queries,
-      status: { [Op.notIn]: ["3"] },
+      status: { [Op.notIn]: ["0", "1"] },
       ...query,
     });
     const res = { current: currentTickets, history: historyTickets };
@@ -166,7 +166,10 @@ const getUserTicketsHistory = async ({ page, limit, order, userId }) => {
     queries.limit = flimit;
     if (order) queries.order = order;
     queries.userId = userId;
-    const historyTickets = await getTickets({ queries, [Op.notIn]: ["3"] });
+    const historyTickets = await getTickets({
+      queries,
+      [Op.notIn]: ["2", "3"],
+    });
     return apiReturns.success(200, "Get Successfully", historyTickets);
   } catch (error) {
     console.error(error.message);
@@ -490,6 +493,56 @@ const confirmBookingTicket = async (rawData) => {
     return apiReturns.error(400, error.message);
   }
 };
+const acceptTicket = async (rawData) => {
+  try {
+    const { reservations } = rawData.body;
+    await Promise.all(
+      await db.sequelize.transaction(async (tx) => {
+        reservations.map(async (data) => {
+          const reservation = await db.Reservation.findOne({
+            where: { id: data },
+          });
+          if (!reservation) {
+            throw new Error("Could not find reservation");
+          }
+          await db.Reservation.update(
+            { status: "1" },
+            { where: { id: reservation.id }, transaction: tx }
+          );
+        });
+      })
+    );
+    return apiReturns.success(200, "Accepted Ticket Successfully");
+  } catch (error) {
+    console.error(error);
+    return apiReturns.error(400, error.message);
+  }
+};
+const cancelTicket = async (rawData) => {
+  try {
+    const { reservations } = rawData.body;
+    await Promise.all(
+      await db.sequelize.transaction(async (tx) => {
+        reservations.map(async (data) => {
+          const reservation = await db.Reservation.findOne({
+            where: { id: data },
+          });
+          if (!reservation) {
+            throw new Error("Could not find reservation");
+          }
+          await db.Reservation.update(
+            { status: "2" },
+            { where: { id: reservation.id }, transaction: tx }
+          );
+        });
+      })
+    );
+    return apiReturns.success(200, "Canceled Ticket Successfully");
+  } catch (error) {
+    console.error(error);
+    return apiReturns.error(400, error.message);
+  }
+};
 
 module.exports = {
   getAllTickets,
@@ -500,4 +553,6 @@ module.exports = {
   createBookingTicket,
   cancelBookingTicket,
   confirmBookingTicket,
+  acceptTicket,
+  cancelTicket,
 };

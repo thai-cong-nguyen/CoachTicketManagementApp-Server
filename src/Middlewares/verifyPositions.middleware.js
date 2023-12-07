@@ -2,7 +2,7 @@ const { notAuthError } = require("../Middlewares/handleErrors.middleware");
 
 exports.isManager = (req, res, next) => {
   const { position } = req.user;
-  if (position.id !== "1") {
+  if (position.id !== "4") {
     return notAuthError("You are not allowed to access this", res);
   }
   next();

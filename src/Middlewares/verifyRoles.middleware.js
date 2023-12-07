@@ -21,3 +21,12 @@ exports.isAdminOrStaff = (req, res, next) => {
   }
   next();
 };
+exports.isAdminOrManager = (req, res, next) => {
+  const { role, position } = req.user;
+  if (role.id !== "3" && role.id !== "2") {
+    return notAuthError("You are not allowed to access this", res);
+  } else if (role.id === "2" && position.id !== "4") {
+    return notAuthError("You are not allowed to access this", res);
+  }
+  next();
+};
