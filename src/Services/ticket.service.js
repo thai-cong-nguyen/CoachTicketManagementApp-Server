@@ -594,7 +594,8 @@ const confirmBookingTicket = async (rawData) => {
       }
       await Promise.all(
         passengers.map(async (passengerInfo) => {
-          const passenger = await db.Passenger.findOrCreate({
+          console.log(passengerInfo);
+          const [passenger, created] = await db.Passenger.findOrCreate({
             where: { phoneNumber: passengerInfo.phoneNumber },
             default: passengerInfo,
             transaction: tx,
