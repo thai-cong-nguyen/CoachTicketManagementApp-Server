@@ -538,7 +538,12 @@ const acceptTicket = async (rawData) => {
 };
 const cancelTicket = async (rawData) => {
   try {
-    const { reservations, reservationsRoundTrip } = rawData.body;
+    const {
+      reservations,
+      reservationsRoundTrip,
+      shuttlePassenger,
+      shuttlePassengerRoundTrip,
+    } = rawData.body;
     await db.sequelize.transaction(async (tx) => {
       await Promise.all(
         reservations.map(async (data) => {
@@ -566,41 +571,41 @@ const cancelTicket = async (rawData) => {
           })
         );
       }
-      // if (shuttlePassenger) {
-      //   await Promise.all(
-      //     shuttlePassenger.map(async (shuttlePassengerId) => {
-      //       const shuttlePassengerFound = await db.ShuttlePassengers.findByPk(
-      //         shuttlePassengerId
-      //       );
-      //       if (!shuttlePassengerFound) {
-      //         throw new Error("Can not find shuttle for passenger");
-      //       } else {
-      //         await db.ShuttlePassengers.destroy({
-      //           where: { id: shuttlePassengerFound.id },
-      //           transaction: tx,
-      //         });
-      //       }
-      //     })
-      //   );
-      // }
-      // if (shuttlePassengerRoundTrip) {
-      //   await Promise.all(
-      //     shuttlePassengerRoundTrip.map(async (shuttlePassengerId) => {
-      //       const shuttlePassengerRoundTripFound =
-      //         await db.ShuttlePassengers.findByPk(shuttlePassengerId);
-      //       if (!shuttlePassengerRoundTripFound) {
-      //         throw new Error(
-      //           "Can not find shuttle of round trip for passenger"
-      //         );
-      //       } else {
-      //         await db.ShuttlePassengers.destroy({
-      //           where: { id: shuttlePassengerRoundTripFound.id },
-      //           transaction: tx,
-      //         });
-      //       }
-      //     })
-      //   );
-      // }
+      if (shuttlePassenger) {
+        await Promise.all(
+          shuttlePassenger.map(async (shuttlePassengerId) => {
+            const shuttlePassengerFound = await db.ShuttlePassengers.findByPk(
+              shuttlePassengerId
+            );
+            if (!shuttlePassengerFound) {
+              throw new Error("Can not find shuttle for passenger");
+            } else {
+              await db.ShuttlePassengers.destroy({
+                where: { id: shuttlePassengerFound.id },
+                transaction: tx,
+              });
+            }
+          })
+        );
+      }
+      if (shuttlePassengerRoundTrip) {
+        await Promise.all(
+          shuttlePassengerRoundTrip.map(async (shuttlePassengerId) => {
+            const shuttlePassengerRoundTripFound =
+              await db.ShuttlePassengers.findByPk(shuttlePassengerId);
+            if (!shuttlePassengerRoundTripFound) {
+              throw new Error(
+                "Can not find shuttle of round trip for passenger"
+              );
+            } else {
+              await db.ShuttlePassengers.destroy({
+                where: { id: shuttlePassengerRoundTripFound.id },
+                transaction: tx,
+              });
+            }
+          })
+        );
+      }
     });
 
     return apiReturns.success(200, "Canceled Ticket Successfully");
