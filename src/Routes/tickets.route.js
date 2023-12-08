@@ -24,7 +24,7 @@ router.post("/create-booking", bookingTicketController);
 router.delete("/cancel-booking", cancelBookingTicketController);
 router.post("/confirm-ticket-info", confirmBookingTicketController);
 router.use(isAdminOrManager);
-router.post("/accept", acceptTicketController);
-router.post("/cancel", cancelTicketController);
+router.patch("/accept", acceptTicketController);
+router.delete("/cancel", cancelTicketController);
 
 module.exports = router;

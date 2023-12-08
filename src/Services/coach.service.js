@@ -145,6 +145,7 @@ const updateCoaches = async (rawData) => {
     const result = await db.sequelize.transaction(async (tx) => {
       if (services) {
         const servicesParse = JSON.parse(services);
+        console.log(servicesParse);
         const serviceCoach = await db.CoachService.findAll({
           where: { coachId: coachId },
           include: [
