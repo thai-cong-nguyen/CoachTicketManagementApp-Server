@@ -6,6 +6,48 @@ const apiReturns = require("../Helpers/apiReturns.helper");
 const { arraysAreEqual } = require("../Utils/compare.util");
 const { remainingSlotOfSchedule } = require("./schedule.service");
 const { countOfShuttlePassenger } = require("./shuttlePassenger.service");
+const { listServiceNameForCoach } = require("./coach.service");
+
+const filterReservationToTickets = async (reservations) => {
+  const tickets = reservations.rows.reduce((acc, curr) => {
+    const found = acc.find(
+      (item) =>
+        item.ScheduleData.scheduleId === curr.ScheduleData.scheduleId &&
+        item.UserAccountData.userId === curr.UserAccountData.userId &&
+        new Date(item.reservationDate).getTime() ===
+          new Date(curr.reservationDate).getTime() &&
+        item.isRoundTrip === curr.isRoundTrip
+    );
+    if (found) {
+      found.reservationId.push(curr.id);
+      found.seatNumber.push(curr.seatNumber);
+      found.PassengerData.push(curr.PassengerData);
+      found.totalPrice += parseInt(curr.ScheduleData.price);
+    } else {
+      acc.push({
+        reservationId: [curr.id],
+        reservationPhoneNumber: curr.reservationPhoneNumber,
+        seatNumber: [curr.seatNumber],
+        reservationDate: curr.reservationDate,
+        paymentId: curr.paymentId,
+        discountId: curr.discountId,
+        status: curr.status,
+        note: curr.note,
+        totalPrice: parseInt(curr.ScheduleData.price),
+        status: curr.status,
+        departurePoint: curr.departurePoint,
+        arrivalPoint: curr.arrivalPoint,
+        isShuttle: curr.isShuttle,
+        isRoundTrip: curr.isRoundTrip,
+        PassengerData: [curr.PassengerData],
+        ScheduleData: curr.ScheduleData,
+        UserAccountData: curr.UserAccountData,
+      });
+    }
+    return acc;
+  }, []);
+  return tickets;
+};
 
 const getTickets = async ({ queries, reservationId, ...query }) => {
   const reservations = await db.Reservation.findAndCountAll({
@@ -62,43 +104,100 @@ const getTickets = async ({ queries, reservationId, ...query }) => {
       },
     ],
   });
-  const tickets = reservations.rows.reduce((acc, curr) => {
-    const found = acc.find(
-      (item) =>
-        item.ScheduleData.scheduleId === curr.ScheduleData.scheduleId &&
-        item.UserAccountData.userId === curr.UserAccountData.userId &&
-        new Date(item.reservationDate).getTime() ===
-          new Date(curr.reservationDate).getTime() &&
-        item.isRoundTrip === curr.isRoundTrip
-    );
-    if (found) {
-      found.reservationId.push(curr.id);
-      found.seatNumber.push(curr.seatNumber);
-      found.PassengerData.push(curr.PassengerData);
-      found.totalPrice += parseInt(curr.ScheduleData.price);
-    } else {
-      acc.push({
-        reservationId: [curr.id],
-        reservationPhoneNumber: curr.reservationPhoneNumber,
-        seatNumber: [curr.seatNumber],
-        reservationDate: curr.reservationDate,
-        paymentId: curr.paymentId,
-        discountId: curr.discountId,
-        status: curr.status,
-        note: curr.note,
-        totalPrice: parseInt(curr.ScheduleData.price),
-        status: curr.status,
-        departurePoint: curr.departurePoint,
-        arrivalPoint: curr.arrivalPoint,
-        isShuttle: curr.isShuttle,
-        isRoundTrip: curr.isRoundTrip,
-        PassengerData: [curr.PassengerData],
-        ScheduleData: curr.ScheduleData,
-        UserAccountData: curr.UserAccountData,
+  const tickets = await filterReservationToTickets(reservations);
+  // adding service of Coach, shuttle, roundTrip ticket in ticket
+  await Promise.all(
+    tickets.map(async (ticket) => {
+      // Service
+      const serviceOfCoach = await listServiceNameForCoach(
+        ticket.ScheduleData.coachId
+      );
+      // Shuttle
+      const shuttlePassenger = await db.ShuttlePassengers.findAll({
+        where: {
+          reservationId: {
+            [Op.in]: ticket.reservationId,
+          },
+        },
+        attributes: ["reservationId", "shuttleRouteId"],
+        include: [
+          {
+            model: db.ShuttleRoutes,
+            as: "ShuttleRouteData",
+            include: [
+              {
+                model: db.Shuttle,
+                as: "ShuttleData",
+                include: [{ model: db.Coach, as: "CoachData" }],
+              },
+            ],
+          },
+        ],
       });
-    }
-    return acc;
-  }, []);
+      // RoundTrip ticket
+      const queryRoundTripTicket = query;
+      query.isRoundTrip = true;
+      const reservationsRoundTrip = await db.Reservation.findAndCountAll({
+        where: query,
+        include: [
+          {
+            model: db.Schedule,
+            as: "ScheduleData",
+            include: [
+              {
+                model: db.Coach,
+                as: "CoachData",
+                include: [
+                  {
+                    model: db.CoachType,
+                    as: "CoachTypeData",
+                  },
+                ],
+              },
+              {
+                model: db.Route,
+                as: "RouteData",
+              },
+              {
+                model: db.Staff,
+                as: "DriverData",
+                attributes: ["id", "fullName", "phoneNumber", "gender"],
+              },
+              {
+                model: db.Staff,
+                as: "CoachAssistantData",
+                attributes: ["id", "fullName", "phoneNumber", "gender"],
+              },
+              {
+                model: db.Places,
+                as: "StartPlaceData",
+              },
+              {
+                model: db.Places,
+                as: "ArrivalPlaceData",
+              },
+            ],
+          },
+          {
+            model: db.Passenger,
+            as: "PassengerData",
+            attributes: ["id", "fullName", "phoneNumber", "gender"],
+          },
+          {
+            model: db.UserAccount,
+            as: "UserAccountData",
+            attributes: ["id", "userName"],
+          },
+        ],
+      });
+      const ticketRoundTrip = await filterReservationToTickets(
+        reservationsRoundTrip
+      );
+      ticket.ShuttleTicketData = shuttlePassenger;
+      ticket.RoundTripTicketData = ticketRoundTrip;
+      ticket.ScheduleData.CoachData.ServiceData = serviceOfCoach;
+    })
+  );
   // adding roundTrip ticket
   // const addingRoundTrip = tickets.map(async (ticket) => {});
   const result = reservationId
@@ -515,9 +614,10 @@ const confirmBookingTicket = async (rawData) => {
 };
 const acceptTicket = async (rawData) => {
   try {
-    const { reservations } = rawData.body;
-    await Promise.all(
-      await db.sequelize.transaction(async (tx) => {
+    const { reservations, reservationsRoundTrip } = rawData.body;
+
+    await db.sequelize.transaction(async (tx) => {
+      await Promise.all(
         reservations.map(async (data) => {
           const reservation = await db.Reservation.findByPk(data);
           if (!reservation) {
@@ -527,9 +627,23 @@ const acceptTicket = async (rawData) => {
             { status: "1" },
             { where: { id: reservation.id }, transaction: tx }
           );
-        });
-      })
-    );
+        })
+      );
+      if (reservationsRoundTrip) {
+        await Promise.all(
+          reservationsRoundTrip.map(async (data) => {
+            const reservationRoundTrip = await db.Reservation.findByPk(data);
+            if (!reservationRoundTrip) {
+              throw new Error("Could not find reservation of Round Trip");
+            }
+            await db.Reservation.update(
+              { status: "1" },
+              { where: { id: reservationRoundTrip.id }, transaction: tx }
+            );
+          })
+        );
+      }
+    });
     return apiReturns.success(200, "Accepted Ticket Successfully");
   } catch (error) {
     console.error(error);
