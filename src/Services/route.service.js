@@ -28,39 +28,49 @@ const getAllRoutes = async ({ page, limit, order, ...query }) => {
 const createNewRoute = async (rawData) => {
   try {
     const { places, ...data } = rawData.body;
-    const route = await db.Route.create(data);
-    if (!route) {
-      throw new Error("Could not create route");
-    }
-    if (places.startPlace) {
-      await Promise.all(
-        places.startPlace.map(async (place) => {
-          await db.Places.create({
-            routeId: route.id,
-            placeName: place.placeName,
-            isPickUpPlace: "1",
-            placeLat: place.placeLat ? place.placeLat : null,
-            placeLng: place.placeLng ? place.placeLng : null,
-          });
-        })
-      );
-    }
-    if (places.endPlace) {
-      await Promise.all(
-        places.endPlace.map(async (place) => {
-          await db.Places.create({
-            routeId: route.id,
-            placeName: place.placeName,
-            isPickUpPlace: "0",
-            placeLat: place.placeLat ? place.placeLat : null,
-            placeLng: place.placeLng ? place.placeLng : null,
-          });
-        })
-      );
-    }
-    return apiReturns.success(200, "Create a new route successfully", route);
+
+    const result = await db.sequelize.transaction(async (tx) => {
+      const route = await db.Route.create(data, { transaction: tx });
+      if (!route) {
+        throw new Error("Could not create route");
+      }
+      if (places.startPlace) {
+        await Promise.all(
+          places.startPlace.map(async (place) => {
+            await db.Places.create(
+              {
+                routeId: route.id,
+                placeName: place.placeName,
+                isPickUpPlace: "1",
+                placeLat: place.placeLat ? place.placeLat : null,
+                placeLng: place.placeLng ? place.placeLng : null,
+              },
+              { transaction: tx }
+            );
+          })
+        );
+      }
+      if (places.endPlace) {
+        await Promise.all(
+          places.endPlace.map(async (place) => {
+            await db.Places.create(
+              {
+                routeId: route.id,
+                placeName: place.placeName,
+                isPickUpPlace: "0",
+                placeLat: place.placeLat ? place.placeLat : null,
+                placeLng: place.placeLng ? place.placeLng : null,
+              },
+              { transaction: tx }
+            );
+          })
+        );
+      }
+      return route;
+    });
+    return apiReturns.success(200, "Create a new route successfully", result);
   } catch (error) {
-    console.error(error.message);
+    console.error(error);
     return apiReturns.error(400, error.message);
   }
 };
@@ -78,7 +88,7 @@ const updateRoute = async (rawData) => {
     const updatedRoute = await db.Route.findOne({ where: { id: routeId } });
     return apiReturns.success(200, "Update Route Successful", updatedRoute);
   } catch (error) {
-    console.error(error.message);
+    console.error(error);
     return apiReturns.error(400, error.message);
   }
 };

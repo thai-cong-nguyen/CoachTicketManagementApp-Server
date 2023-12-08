@@ -21,7 +21,7 @@ exports.createNewRouteController = async (req, res, next) => {
     const response = await createNewRoute(req);
     return res.status(response.code).send(response);
   } catch (error) {
-    console.error(error.message);
+    console.error(error);
     return res.status(404).send(error.message);
   }
 };
