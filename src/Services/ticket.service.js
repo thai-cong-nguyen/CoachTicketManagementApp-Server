@@ -367,12 +367,12 @@ const createBookingTicket = async (rawData) => {
             where: { seatNumber: seat },
             defaults: {
               userId: rawData.user.userId,
-              scheduleId,
+              scheduleId: scheduleId,
               seatNumber: seat,
               reservationDate: new Date().toISOString(),
-              paymentId,
-              departurePoint,
-              arrivalPoint,
+              paymentId: paymentId,
+              departurePoint: departurePoint,
+              arrivalPoint: arrivalPoint,
             },
             transaction: tx,
           });
@@ -449,32 +449,33 @@ const createBookingTicket = async (rawData) => {
 
         await Promise.all(
           roundTrip.seats.map(async (seat) => {
-            const [reservation, created] = await db.Reservation.findOrCreate({
-              where: {
-                userId: rawData.user.userId,
-                scheduleId: roundTrip.scheduleId,
-                seatNumber: seat,
-                paymentId,
-                departurePoint: roundTrip.departurePoint,
-                arrivalPoint: roundTrip.arrivalPoint,
-                isRoundTrip: 1,
-              },
-              defaults: {
-                userId: rawData.user.userId,
-                scheduleId: roundTrip.scheduleId,
-                seatNumber: seat,
-                reservationDate: new Date().toISOString(),
-                paymentId,
-                departurePoint: roundTrip.departurePoint,
-                arrivalPoint: roundTrip.arrivalPoint,
-                isRoundTrip: 1,
-              },
-              transaction: tx,
-            });
+            const [reservationRoundTrip, created] =
+              await db.Reservation.findOrCreate({
+                where: {
+                  userId: rawData.user.userId,
+                  scheduleId: roundTrip.scheduleId,
+                  seatNumber: seat,
+                  paymentId,
+                  departurePoint: roundTrip.departurePoint,
+                  arrivalPoint: roundTrip.arrivalPoint,
+                  isRoundTrip: true,
+                },
+                defaults: {
+                  userId: rawData.user.userId,
+                  scheduleId: roundTrip.scheduleId,
+                  seatNumber: seat,
+                  reservationDate: new Date().toISOString(),
+                  paymentId,
+                  departurePoint: roundTrip.departurePoint,
+                  arrivalPoint: roundTrip.arrivalPoint,
+                  isRoundTrip: true,
+                },
+                transaction: tx,
+              });
             if (!created) {
               throw new Error("Seat for Round Trip is not Available");
             } else {
-              reservationsRoundTrip.push(reservation);
+              reservationsRoundTrip.push(reservationRoundTrip);
             }
           })
         );
@@ -501,7 +502,6 @@ const createBookingTicket = async (rawData) => {
           const remainingSlotShuttle =
             shuttleRoute.ShuttleData.CoachData.capacity -
             (await countOfShuttlePassenger(shuttleRoute.id));
-          console.log(remainingSlotShuttle);
           if (remainingSlotShuttle < roundTrip.shuttle.quantity) {
             throw new Error("Can not enough seats for shuttle");
           }
