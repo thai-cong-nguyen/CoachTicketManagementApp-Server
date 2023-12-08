@@ -596,7 +596,7 @@ const confirmBookingTicket = async (rawData) => {
         passengers.map(async (passengerInfo) => {
           const passenger = await db.Passenger.findOrCreate({
             where: { phoneNumber: passengerInfo.phoneNumber },
-            default: passengerInfo.passenger,
+            default: passengerInfo,
             transaction: tx,
           });
           const reservation = await db.Reservation.update(
