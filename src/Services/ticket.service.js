@@ -593,7 +593,7 @@ const confirmBookingTicket = async (rawData) => {
         throw new Error("Fill full passenger for reservation");
       }
       await Promise.all(
-        passengers.forEach(async (passengerInfo) => {
+        passengers.map(async (passengerInfo) => {
           const passenger = await db.Passenger.findOrCreate({
             where: { phoneNumber: passengerInfo.phoneNumber },
             default: passengerInfo.passenger,
