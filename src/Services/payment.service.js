@@ -42,7 +42,7 @@ const paymentGateway = async (rawData) => {
 
 const confirmPayment = async (rawData) => {
   try {
-    const { discountId, reservations } = rawData.body;
+    const { discountId, reservations, reservationsRoundTrip } = rawData.body;
     const result = await db.sequelize.transaction(async (tx) => {
       if (discountId) {
         const discount = await db.UserDiscount.findOne({
@@ -63,8 +63,11 @@ const confirmPayment = async (rawData) => {
           }
         );
       }
-      if (reservations) {
-        reservations.forEach(async (reservationId) => {
+      if (!reservations) {
+        throw new Error("Reservation is not available");
+      }
+      await Promise.all(
+        reservations.map(async (reservationId) => {
           const reservation = await db.Reservation.findByPk(reservationId);
           if (!reservation) {
             throw new Error("Can not find reservation");
@@ -74,8 +77,22 @@ const confirmPayment = async (rawData) => {
               { where: { id: reservation.id }, transaction: tx }
             );
           }
-        });
-      }
+        })
+      );
+
+      await Promise.all(
+        reservationsRoundTrip.map(async (reservationId) => {
+          const reservation = await db.Reservation.findByPk(reservationId);
+          if (!reservation) {
+            throw new Error("Can not find reservation for round Trip");
+          } else {
+            await db.Reservation.update(
+              { status: "1" },
+              { where: { id: reservation.id }, transaction: tx }
+            );
+          }
+        })
+      );
     });
     return apiReturns.success(200, "Payment Successfully");
   } catch (error) {

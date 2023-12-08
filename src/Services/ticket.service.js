@@ -68,7 +68,8 @@ const getTickets = async ({ queries, reservationId, ...query }) => {
         item.ScheduleData.scheduleId === curr.ScheduleData.scheduleId &&
         item.UserAccountData.userId === curr.UserAccountData.userId &&
         new Date(item.reservationDate).getTime() ===
-          new Date(curr.reservationDate).getTime()
+          new Date(curr.reservationDate).getTime() &&
+        item.isRoundTrip === curr.isRoundTrip
     );
     if (found) {
       found.reservationId.push(curr.id);
@@ -98,6 +99,7 @@ const getTickets = async ({ queries, reservationId, ...query }) => {
     }
     return acc;
   }, []);
+  // adding roundTrip ticket
   // const addingRoundTrip = tickets.map(async (ticket) => {});
   const result = reservationId
     ? tickets.filter((ticket) =>
@@ -349,7 +351,15 @@ const createBookingTicket = async (rawData) => {
         await Promise.all(
           roundTrip.seats.map(async (seat) => {
             const [reservation, created] = await db.Reservation.findOrCreate({
-              where: { scheduleId: roundTrip.scheduleId, seatNumber: seat },
+              where: {
+                userId: rawData.user.userId,
+                scheduleId: roundTrip.scheduleId,
+                seatNumber: seat,
+                paymentId,
+                departurePoint: roundTrip.departurePoint,
+                arrivalPoint: roundTrip.arrivalPoint,
+                isRoundTrip: 1,
+              },
               defaults: {
                 userId: rawData.user.userId,
                 scheduleId: roundTrip.scheduleId,
@@ -358,6 +368,7 @@ const createBookingTicket = async (rawData) => {
                 paymentId,
                 departurePoint: roundTrip.departurePoint,
                 arrivalPoint: roundTrip.arrivalPoint,
+                isRoundTrip: 1,
               },
               transaction: tx,
             });
@@ -467,41 +478,6 @@ const cancelBookingTicket = async (rawData) => {
           })
         );
       }
-      // if (shuttlePassenger) {
-      //   await Promise.all(
-      //     shuttlePassenger.map(async (shuttlePassengerId) => {
-      //       const shuttlePassengerFound = await db.ShuttlePassengers.findByPk(
-      //         shuttlePassengerId
-      //       );
-      //       if (!shuttlePassengerFound) {
-      //         throw new Error("Can not find shuttle for passenger");
-      //       } else {
-      //         await db.ShuttlePassengers.destroy({
-      //           where: { id: shuttlePassengerFound.id },
-      //           transaction: tx,
-      //         });
-      //       }
-      //     })
-      //   );
-      // }
-      // if (shuttlePassengerRoundTrip) {
-      //   await Promise.all(
-      //     shuttlePassengerRoundTrip.map(async (shuttlePassengerId) => {
-      //       const shuttlePassengerRoundTripFound =
-      //         await db.ShuttlePassengers.findByPk(shuttlePassengerId);
-      //       if (!shuttlePassengerRoundTripFound) {
-      //         throw new Error(
-      //           "Can not find shuttle of round trip for passenger"
-      //         );
-      //       } else {
-      //         await db.ShuttlePassengers.destroy({
-      //           where: { id: shuttlePassengerRoundTripFound.id },
-      //           transaction: tx,
-      //         });
-      //       }
-      //     })
-      //   );
-      // }
     });
     return apiReturns.success(200, "Canceled Booking Ticket Successfully");
   } catch (error) {
@@ -562,9 +538,9 @@ const acceptTicket = async (rawData) => {
 };
 const cancelTicket = async (rawData) => {
   try {
-    const { reservations } = rawData.body;
-    await Promise.all(
-      await db.sequelize.transaction(async (tx) => {
+    const { reservations, reservationsRoundTrip } = rawData.body;
+    await db.sequelize.transaction(async (tx) => {
+      await Promise.all(
         reservations.map(async (data) => {
           const reservation = await db.Reservation.findByPk(data);
           if (!reservation) {
@@ -574,9 +550,59 @@ const cancelTicket = async (rawData) => {
             { status: "2" },
             { where: { id: reservation.id }, transaction: tx }
           );
-        });
-      })
-    );
+        })
+      );
+      if (reservationsRoundTrip) {
+        await Promise.all(
+          reservationsRoundTrip.map(async (data) => {
+            const reservationRoundTrip = await db.Reservation.findByPk(data);
+            if (!reservationRoundTrip) {
+              throw new Error("Could not find reservation of Round Trip");
+            }
+            await db.Reservation.update(
+              { status: "2" },
+              { where: { id: reservationRoundTrip.id }, transaction: tx }
+            );
+          })
+        );
+      }
+      // if (shuttlePassenger) {
+      //   await Promise.all(
+      //     shuttlePassenger.map(async (shuttlePassengerId) => {
+      //       const shuttlePassengerFound = await db.ShuttlePassengers.findByPk(
+      //         shuttlePassengerId
+      //       );
+      //       if (!shuttlePassengerFound) {
+      //         throw new Error("Can not find shuttle for passenger");
+      //       } else {
+      //         await db.ShuttlePassengers.destroy({
+      //           where: { id: shuttlePassengerFound.id },
+      //           transaction: tx,
+      //         });
+      //       }
+      //     })
+      //   );
+      // }
+      // if (shuttlePassengerRoundTrip) {
+      //   await Promise.all(
+      //     shuttlePassengerRoundTrip.map(async (shuttlePassengerId) => {
+      //       const shuttlePassengerRoundTripFound =
+      //         await db.ShuttlePassengers.findByPk(shuttlePassengerId);
+      //       if (!shuttlePassengerRoundTripFound) {
+      //         throw new Error(
+      //           "Can not find shuttle of round trip for passenger"
+      //         );
+      //       } else {
+      //         await db.ShuttlePassengers.destroy({
+      //           where: { id: shuttlePassengerRoundTripFound.id },
+      //           transaction: tx,
+      //         });
+      //       }
+      //     })
+      //   );
+      // }
+    });
+
     return apiReturns.success(200, "Canceled Ticket Successfully");
   } catch (error) {
     console.error(error);
