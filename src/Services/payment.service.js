@@ -101,4 +101,4 @@ const confirmPayment = async (rawData) => {
   }
 };
 
-module.exports = { paymentGateway };
+module.exports = { paymentGateway, confirmPayment };
