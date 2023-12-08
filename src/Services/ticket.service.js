@@ -593,16 +593,15 @@ const confirmBookingTicket = async (rawData) => {
         throw new Error("Fill full passenger for reservation");
       }
       await Promise.all(
-        passengers.map(async (passengerInfo) => {
-          console.log(passengerInfo);
+        passengers.map(async (passengerInfo, index) => {
           const [passenger, created] = await db.Passenger.findOrCreate({
             where: { phoneNumber: passengerInfo.phoneNumber },
-            default: passengerInfo,
+            defaults: passengerInfo,
             transaction: tx,
           });
           const reservation = await db.Reservation.update(
             { passengerId: passenger.id },
-            { where: { id: e.id }, transaction: tx }
+            { where: { id: reservations[index] }, transaction: tx }
           );
         })
       );
