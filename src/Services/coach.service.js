@@ -143,38 +143,50 @@ const updateCoaches = async (rawData) => {
             { model: db.Service, as: "ServiceData", attributes: ["id"] },
           ],
         });
-        const serviceCoachDelete = serviceCoach.filter((data) =>
-          services.some((service) => service !== data.ServiceData.id)
+        const serviceCoachDelete = serviceCoach.filter(
+          (data) => services.indexOf(data.ServiceData.id) === -1
         );
-        console.log(serviceCoachDelete);
-        // await Promise.all(serviceCoach.map(async (data) => {
-        //   const check = await db.CoachService.findByPk(data);
-        //   if (!check) {
-        //     throw new Error("Can not find Service of Coach");
-        //   }
-        //   await db.CoachService.destroy({
-        //     where: { id: data },
-        //     transaction: tx,
-        //   });
-        // }))
-        // await Promise.all(await services.map(async (data) => {
-        //   const check = await db.Service.findByPk(data);
-        //   if (!check) {
-        //     throw new Error("Can not find Serivce");
-        //   }
-        //   await db.CoachService.create({
-        //     where: { id: data },
-        //     transaction: tx,
-        //   });
-        // }))
+        const serviceCoachCreate = services.filter(
+          (service) =>
+            !serviceCoach.some((data) => data.ServiceData.id === service)
+        );
+        await Promise.all(
+          serviceCoachDelete.map(async (data) => {
+            const check = await db.CoachService.findByPk(data.id);
+            if (!check) {
+              throw new Error("Can not find Service of Coach");
+            }
+            await db.CoachService.destroy({
+              where: { id: data.id },
+              transaction: tx,
+            });
+          })
+        );
+        await Promise.all(
+          serviceCoachCreate.map(async (data) => {
+            const checkServiceExists = await db.Service.findByPk(data);
+            if (!checkServiceExists) {
+              throw new Error("Can not find Service");
+            }
+            const [, created] = await db.CoachService.findOrCreate({
+              where: { coachId: coachId, serviceId: data },
+              default: { coachId: coachId, serviceId: data },
+              transaction: tx,
+            });
+            if (!created) {
+              throw new Error("Can not create Service for Coach");
+            }
+          })
+        );
       }
-      const updatedCoach = await db.Coach.update(data, {
-        where: { id: coachId },
-        transaction: tx,
-      });
-      return updatedCoach;
+      if (data) {
+        const updatedCoach = await db.Coach.update(data, {
+          where: { id: coachId },
+          transaction: tx,
+        });
+      }
     });
-    return apiReturns.success(200, "Updated Coach Successfully", result);
+    return apiReturns.success(200, "Updated Coach Successfully");
   } catch (error) {
     console.error(error);
     return apiReturns.error(400, error.message);
