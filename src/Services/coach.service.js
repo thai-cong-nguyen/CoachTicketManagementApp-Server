@@ -42,17 +42,24 @@ const createNewCoach = async (rawData) => {
       const downloadURL = await getDownloadURL(snapshot.ref);
       data.image = downloadURL;
     }
-    const coach = await db.Coach.create(data);
-    if (services) {
-      await Promise.all(
-        services.map(async (service) => {
-          await db.CoachService.create({
-            coachId: coach.id,
-            serviceId: service,
-          });
-        })
-      );
-    }
+    await db.sequelize.transaction(async (tx) => {
+      const coach = await db.Coach.create(data, { transaction: tx });
+      if (services) {
+        console.log(services);
+        await Promise.all(
+          services.map(async (service) => {
+            await db.CoachService.create(
+              {
+                coachId: coach.id,
+                serviceId: service,
+              },
+              { transaction: tx }
+            );
+          })
+        );
+      }
+    });
+
     return apiReturns.success(200, "Created new Coach Successful", coach);
   } catch (error) {
     console.error(error.message);

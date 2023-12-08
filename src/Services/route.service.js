@@ -15,9 +15,19 @@ const getAllRoutes = async ({ page, limit, order, ...query }) => {
     if (order) queries.order = order;
     const routes = await db.Route.findAndCountAll({
       where: query,
-      attributes: { exclude: ["password"] },
       ...queries,
     });
+    await Promise.all(
+      routes.rows.map(async (route) => {
+        const startPlaces = await db.Places.findAll({
+          where: { routeId: route.id, isPickUpPlace: "1" },
+        });
+        const arrivalPlaces = await db.Places.findAll({
+          where: { routeId: route.id, isPickUpPlace: "0" },
+        });
+        route.PlacesData = { startPlaces, arrivalPlaces };
+      })
+    );
     return apiReturns.success(200, "Get Successfully", routes);
   } catch (error) {
     console.error(error.message);
