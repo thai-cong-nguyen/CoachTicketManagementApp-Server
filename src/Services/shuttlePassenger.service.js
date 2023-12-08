@@ -13,7 +13,7 @@ module.exports = {
       queries.offset = offset * fLimit;
       queries.limit = fLimit;
       if (order) queries.order = order;
-      const shuttlePassengers = await db.ShuttlePassenger.findAndCountAll({
+      const shuttlePassengers = await db.ShuttlePassengers.findAndCountAll({
         where: query,
         ...queries,
         include: [
@@ -43,13 +43,13 @@ module.exports = {
   deleteShuttlePassengers: async (rawData) => {
     try {
       const shuttlePassengerId = rawData.params.shuttlePassengerId;
-      const shuttlePassenger = await db.ShuttlePassenger.findByPk({
+      const shuttlePassenger = await db.ShuttlePassengers.findByPk({
         where: { id: shuttlePassengerId },
       });
       if (!shuttlePassenger) {
         throw new Error("Shuttle Passenger is not existed");
       }
-      await db.ShuttlePassenger.destroy({ where: { id: shuttlePassengerId } });
+      await db.ShuttlePassengers.destroy({ where: { id: shuttlePassengerId } });
       return apiReturns.success(200, "Deleted Shuttle Passenger Successfully");
     } catch (error) {
       console.log(error);
@@ -58,7 +58,7 @@ module.exports = {
   },
 
   countOfShuttlePassenger: async (shuttleRouteId) => {
-    const shuttlePassengers = await db.ShuttlePassenger.findAndCountAll({
+    const shuttlePassengers = await db.ShuttlePassengers.findAndCountAll({
       where: { shuttleRouteId: shuttleRouteId },
     });
     return shuttlePassengers ? shuttlePassengers.count : 0;

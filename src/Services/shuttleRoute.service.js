@@ -19,10 +19,7 @@ const getAllShuttleRoutes = async ({ page, limit, order, ...query }) => {
         {
           model: db.Shuttle,
           as: "ShuttleData",
-        },
-        {
-          model: db.Places,
-          as: "DeparturePlaceData",
+          include: [{ model: db.Coach, as: "CoachData" }],
         },
       ],
     });
