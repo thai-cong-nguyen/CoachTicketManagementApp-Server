@@ -144,7 +144,7 @@ const updateCoaches = async (rawData) => {
     }
     const result = await db.sequelize.transaction(async (tx) => {
       if (services) {
-        services = JSON.parse(services);
+        const servicesParse = JSON.parse(services);
         const serviceCoach = await db.CoachService.findAll({
           where: { coachId: coachId },
           include: [
@@ -152,9 +152,9 @@ const updateCoaches = async (rawData) => {
           ],
         });
         const serviceCoachDelete = serviceCoach.filter(
-          (data) => services.indexOf(data.ServiceData.id) === -1
+          (data) => servicesParse.indexOf(data.ServiceData.id) === -1
         );
-        const serviceCoachCreate = services.filter(
+        const serviceCoachCreate = servicesParse.filter(
           (service) =>
             !serviceCoach.some((data) => data.ServiceData.id === service)
         );
