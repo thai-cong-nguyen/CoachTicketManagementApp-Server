@@ -107,13 +107,13 @@ const getAllCoaches = async ({ page, limit, order, ...query }) => {
 const updateCoaches = async (rawData) => {
   try {
     const coachId = rawData.params.coachId;
-    const data = rawData.body;
+    const { services, ...data } = rawData.body;
     const file = await rawData.file;
     const coach = await db.Coach.findByPk(coachId);
     if (!coach) {
       throw new Error("Coaches Not Found");
     }
-    // uploa coach's image
+    // upload coach's image
     if (file) {
       const dateTime = new Date().toLocaleString("en-US", {
         timeZone: "Asia/ho_chi_minh",
@@ -135,10 +135,46 @@ const updateCoaches = async (rawData) => {
       const downloadURL = await getDownloadURL(snapshot.ref);
       data.image = downloadURL;
     }
-    const updatedCoach = await db.Coach.update(data, {
-      where: { id: coachId },
+    const result = await db.sequelize.transaction(async (tx) => {
+      if (services) {
+        const serviceCoach = await db.CoachService.findAll({
+          where: { coachId: coachId },
+          include: [
+            { model: db.Service, as: "ServiceData", attributes: ["id"] },
+          ],
+        });
+        const serviceCoachDelete = serviceCoach.filter((data) =>
+          services.some((service) => service !== data.ServiceData.id)
+        );
+        console.log(serviceCoachDelete);
+        // await Promise.all(serviceCoach.map(async (data) => {
+        //   const check = await db.CoachService.findByPk(data);
+        //   if (!check) {
+        //     throw new Error("Can not find Service of Coach");
+        //   }
+        //   await db.CoachService.destroy({
+        //     where: { id: data },
+        //     transaction: tx,
+        //   });
+        // }))
+        // await Promise.all(await services.map(async (data) => {
+        //   const check = await db.Service.findByPk(data);
+        //   if (!check) {
+        //     throw new Error("Can not find Serivce");
+        //   }
+        //   await db.CoachService.create({
+        //     where: { id: data },
+        //     transaction: tx,
+        //   });
+        // }))
+      }
+      const updatedCoach = await db.Coach.update(data, {
+        where: { id: coachId },
+        transaction: tx,
+      });
+      return updatedCoach;
     });
-    return apiReturns.success(200, "Updated Coach Successfully", updatedCoach);
+    return apiReturns.success(200, "Updated Coach Successfully", result);
   } catch (error) {
     console.error(error);
     return apiReturns.error(400, error.message);

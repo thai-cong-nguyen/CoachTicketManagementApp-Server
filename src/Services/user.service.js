@@ -145,11 +145,14 @@ const updateUserAccountById = async (rawData) => {
     if (email) updatedInfo.email = email;
     if (phoneNumber) updatedInfo.phoneNumber = phoneNumber;
     if (address) updatedInfo.address = address;
+    const user = await db.UserAccount.findByPk(userId, {
+      include: [{ model: db.Role, as: "RoleData" }],
+    });
     if (userName) {
-      const user = await db.UserAccount.findOne({
+      const checkUserExists = await db.UserAccount.findOne({
         where: { userName: userName },
       });
-      if (user) {
+      if (checkUserExists) {
         return apiReturns.validation("User name is already in use");
       }
       updatedAccount.userName = userName;
@@ -177,24 +180,28 @@ const updateUserAccountById = async (rawData) => {
       updatedAccount.avatar = downloadURL;
     }
     await db.sequelize.transaction(async (t) => {
-      await db.UserAccount.update(
-        updatedAccount,
-        { where: { id: userId } },
-        { transaction: t }
-      );
-      if (rawData.user.role.id === "1") {
-        await db.Passenger.update(
-          updatedInfo,
-          { where: { userId: userId } },
+      if (updatedAccount) {
+        await db.UserAccount.update(
+          updatedAccount,
+          { where: { id: userId } },
           { transaction: t }
         );
-      } else if (rawData.user.role.id === "2") {
-        if (positionId) updatedInfo.positionId = positionId;
-        await db.Staff.update(
-          updatedInfo,
-          { where: { userId: userId } },
-          { transaction: t }
-        );
+      }
+      if (updatedInfo) {
+        if (user.RoleData.id === "1") {
+          await db.Passenger.update(
+            updatedInfo,
+            { where: { userId: userId } },
+            { transaction: t }
+          );
+        } else if (user.RoleData.id === "2") {
+          if (positionId) updatedInfo.positionId = positionId;
+          await db.Staff.update(
+            updatedInfo,
+            { where: { userId: userId } },
+            { transaction: t }
+          );
+        }
       }
       if (userName)
         renameKeyRedis({ oldKey: rawData.user.userName, newKey: userName });

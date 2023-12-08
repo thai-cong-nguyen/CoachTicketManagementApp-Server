@@ -10,6 +10,7 @@ const {
   updateRewardPointController,
 } = require("../Controllers/userAccount.controller");
 const { verifyJWT } = require("../Middlewares/JWT.middleware");
+const { notAuthError } = require("../Middlewares/handleErrors.middleware");
 const {
   isAdmin,
   isStaff,
@@ -25,6 +26,13 @@ router.get("/currentAccount", getCurrentUserAccountController);
 router.patch("/changePassword", changePasswordCurrentUserAccountController);
 router.patch(
   "/:userId",
+  (req, res, next) => {
+    const { userId, role } = req.user;
+    if (role.id !== "3" && userId !== req.params.userId) {
+      return notAuthError("You are not allowed to access this", res);
+    }
+    next();
+  },
   async (req, res, next) => {
     try {
       upload.single("image")(req, res, (err) => {
