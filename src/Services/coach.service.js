@@ -41,6 +41,9 @@ const createNewCoach = async (rawData) => {
       );
       const downloadURL = await getDownloadURL(snapshot.ref);
       data.image = downloadURL;
+    } else {
+      data.image =
+        "https://firebasestorage.googleapis.com/v0/b/coach-management-app.appspot.com/o/images%2Fvecteezy_bus-icon-design-template_7635505.jpg%20%20%20%20%20%20%2012%2F8%2F2023%2C%209%3A50%3A00%20PM?alt=media&token=f2ff5650-2591-4eb8-b655-ce26b7ad9a7b";
     }
     const result = await db.sequelize.transaction(async (tx) => {
       const coach = await db.Coach.create(data, { transaction: tx });
