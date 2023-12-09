@@ -127,18 +127,29 @@ const deleteSchedule = async (rawData) => {
   }
 };
 
-const countNumberOfPassengerByScheduleId = async (scheduleId) => {
+const countNumberOfPassengerByScheduleId = async (
+  scheduleId,
+  transaction = null
+) => {
   const reservations = await db.Reservation.findAndCountAll({
     where: { scheduleId: scheduleId },
+    transaction: transaction ? transaction : null,
   });
   return reservations ? reservations.count : 0;
 };
 
-const remainingSlotOfSchedule = async (scheduleId, coachId) => {
+const remainingSlotOfSchedule = async (
+  scheduleId,
+  coachId,
+  transaction = null
+) => {
   const numberOfPassenger = await countNumberOfPassengerByScheduleId(
-    scheduleId
+    scheduleId,
+    transaction
   );
-  const coach = await db.Coach.findByPk(coachId);
+  const coach = await db.Coach.findByPk(coachId, {
+    transaction: transaction ? transaction : null,
+  });
   return coach
     ? coach.capacity - numberOfPassenger > 0
       ? coach.capacity - numberOfPassenger
