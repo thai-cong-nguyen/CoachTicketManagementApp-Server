@@ -350,148 +350,50 @@ const createBookingTicket = async (rawData) => {
     const result = await db.sequelize.transaction(
       { logging: console.log },
       async (tx) => {
-        const schedule = await db.Schedule.findByPk(scheduleId, {
-          transaction: tx,
-        });
-        if (!schedule) {
-          throw new Error("Can not find schedule");
-        }
-
-        const remainingSlot = await remainingSlotOfSchedule(
-          scheduleId,
-          schedule.coachId
-        );
-
-        if (remainingSlot < seats.length) {
-          throw new Error("Can not enough seats for booking");
-        }
-
-        await Promise.all(
-          seats.map(async (seat) => {
-            const [reservation, created] = await db.Reservation.findOrCreate({
-              where: { seatNumber: seat },
-              defaults: {
-                userId: rawData.user.userId,
-                scheduleId: scheduleId,
-                seatNumber: seat,
-                reservationDate: new Date().toISOString(),
-                paymentId: paymentId,
-                departurePoint: departurePoint,
-                arrivalPoint: arrivalPoint,
-              },
-              transaction: tx,
-            });
-            if (!created) {
-              throw new Error("Seat is not Available");
-            } else {
-              reservations.push(reservation);
-            }
-          })
-        );
-        // shuttle processing
-        if (shuttle) {
-          const shuttleRoute = await db.ShuttleRoutes.findOne({
-            where: { id: shuttle.shuttleRouteId },
-            include: [
-              {
-                model: db.Shuttle,
-                as: "ShuttleData",
-                include: [
-                  {
-                    model: db.Coach,
-                    as: "CoachData",
-                  },
-                ],
-              },
-            ],
+        console.log("Transaction started");
+        try {
+          const schedule = await db.Schedule.findByPk(scheduleId, {
             transaction: tx,
           });
-          if (!shuttleRoute) {
-            throw new Error("Shuttle Route is not Available");
-          }
-          const remainingSlotShuttle =
-            shuttleRoute.ShuttleData.CoachData.capacity -
-            (await countOfShuttlePassenger(shuttleRoute.id));
-          if (remainingSlotShuttle < shuttle.quantity) {
-            throw new Error("Can not enough seats for shuttle");
-          }
-          await Promise.all(
-            reservations.map(async (reservation) => {
-              const [shuttlePassengerFound, created] =
-                await db.ShuttlePassengers.findOrCreate({
-                  where: {
-                    shuttleRouteId: shuttle.shuttleRouteId,
-                    reservationId: reservation.id,
-                  },
-                  defaults: {
-                    shuttleRouteId: shuttle.shuttleRouteId,
-                    reservationId: reservation.id,
-                  },
-                  transaction: tx,
-                });
-              if (!created) {
-                throw new Error("This passenger is booking Shuttle");
-              } else {
-                shuttlePassenger.push(shuttlePassengerFound);
-              }
-            })
-          );
-        }
-        // roundTrip processing
-        if (roundTrip) {
-          const scheduledRoundTrip = await db.Schedule.findByPk(
-            roundTrip.scheduleId,
-            { transaction: tx }
-          );
-          if (!scheduledRoundTrip) {
-            throw new Error("Can not find schedule for round Trip");
+          if (!schedule) {
+            throw new Error("Can not find schedule");
           }
 
-          const remainingSlotOfRoundTrip = await remainingSlotOfSchedule(
-            roundTrip.scheduleId,
-            scheduledRoundTrip.coachId
+          const remainingSlot = await remainingSlotOfSchedule(
+            scheduleId,
+            schedule.coachId
           );
 
-          if (remainingSlotOfRoundTrip < roundTrip.seats.length) {
-            throw new Error("Can not enough seats of Round Trip for booking");
+          if (remainingSlot < seats.length) {
+            throw new Error("Can not enough seats for booking");
           }
 
           await Promise.all(
-            roundTrip.seats.map(async (seat) => {
-              const [reservationRoundTrip, created] =
-                await db.Reservation.findOrCreate({
-                  where: {
-                    userId: rawData.user.userId,
-                    scheduleId: roundTrip.scheduleId,
-                    seatNumber: seat,
-                    paymentId,
-                    departurePoint: roundTrip.departurePoint,
-                    arrivalPoint: roundTrip.arrivalPoint,
-                    isRoundTrip: true,
-                  },
-                  defaults: {
-                    userId: rawData.user.userId,
-                    scheduleId: roundTrip.scheduleId,
-                    seatNumber: seat,
-                    reservationDate: new Date().toISOString(),
-                    paymentId,
-                    departurePoint: roundTrip.departurePoint,
-                    arrivalPoint: roundTrip.arrivalPoint,
-                    isRoundTrip: true,
-                  },
-                  transaction: tx,
-                });
+            seats.map(async (seat) => {
+              const [reservation, created] = await db.Reservation.findOrCreate({
+                where: { seatNumber: seat },
+                defaults: {
+                  userId: rawData.user.userId,
+                  scheduleId: scheduleId,
+                  seatNumber: seat,
+                  reservationDate: new Date().toISOString(),
+                  paymentId: paymentId,
+                  departurePoint: departurePoint,
+                  arrivalPoint: arrivalPoint,
+                },
+                transaction: tx,
+              });
               if (!created) {
-                throw new Error("Seat for Round Trip is not Available");
+                throw new Error("Seat is not Available");
               } else {
-                reservationsRoundTrip.push(reservationRoundTrip);
+                reservations.push(reservation);
               }
             })
           );
-
-          if (roundTrip.shuttle) {
+          // shuttle processing
+          if (shuttle) {
             const shuttleRoute = await db.ShuttleRoutes.findOne({
-              where: { id: roundTrip.shuttle.shuttleRouteId },
+              where: { id: shuttle.shuttleRouteId },
               include: [
                 {
                   model: db.Shuttle,
@@ -512,19 +414,19 @@ const createBookingTicket = async (rawData) => {
             const remainingSlotShuttle =
               shuttleRoute.ShuttleData.CoachData.capacity -
               (await countOfShuttlePassenger(shuttleRoute.id));
-            if (remainingSlotShuttle < roundTrip.shuttle.quantity) {
+            if (remainingSlotShuttle < shuttle.quantity) {
               throw new Error("Can not enough seats for shuttle");
             }
             await Promise.all(
-              reservationsRoundTrip.map(async (reservation) => {
-                const [shuttlePassengerRoundTripFound, created] =
+              reservations.map(async (reservation) => {
+                const [shuttlePassengerFound, created] =
                   await db.ShuttlePassengers.findOrCreate({
                     where: {
-                      shuttleRouteId: roundTrip.shuttle.shuttleRouteId,
+                      shuttleRouteId: shuttle.shuttleRouteId,
                       reservationId: reservation.id,
                     },
                     defaults: {
-                      shuttleRouteId: roundTrip.shuttle.shuttleRouteId,
+                      shuttleRouteId: shuttle.shuttleRouteId,
                       reservationId: reservation.id,
                     },
                     transaction: tx,
@@ -532,14 +434,119 @@ const createBookingTicket = async (rawData) => {
                 if (!created) {
                   throw new Error("This passenger is booking Shuttle");
                 } else {
-                  shuttlePassengerRoundTrip.push(
-                    shuttlePassengerRoundTripFound
-                  );
+                  shuttlePassenger.push(shuttlePassengerFound);
                 }
               })
             );
           }
+          // roundTrip processing
+          if (roundTrip) {
+            const scheduledRoundTrip = await db.Schedule.findByPk(
+              roundTrip.scheduleId,
+              { transaction: tx }
+            );
+            if (!scheduledRoundTrip) {
+              throw new Error("Can not find schedule for round Trip");
+            }
+
+            const remainingSlotOfRoundTrip = await remainingSlotOfSchedule(
+              roundTrip.scheduleId,
+              scheduledRoundTrip.coachId
+            );
+
+            if (remainingSlotOfRoundTrip < roundTrip.seats.length) {
+              throw new Error("Can not enough seats of Round Trip for booking");
+            }
+
+            await Promise.all(
+              roundTrip.seats.map(async (seat) => {
+                const [reservationRoundTrip, created] =
+                  await db.Reservation.findOrCreate({
+                    where: {
+                      userId: rawData.user.userId,
+                      scheduleId: roundTrip.scheduleId,
+                      seatNumber: seat,
+                      paymentId,
+                      departurePoint: roundTrip.departurePoint,
+                      arrivalPoint: roundTrip.arrivalPoint,
+                      isRoundTrip: true,
+                    },
+                    defaults: {
+                      userId: rawData.user.userId,
+                      scheduleId: roundTrip.scheduleId,
+                      seatNumber: seat,
+                      reservationDate: new Date().toISOString(),
+                      paymentId,
+                      departurePoint: roundTrip.departurePoint,
+                      arrivalPoint: roundTrip.arrivalPoint,
+                      isRoundTrip: true,
+                    },
+                    transaction: tx,
+                  });
+                if (!created) {
+                  throw new Error("Seat for Round Trip is not Available");
+                } else {
+                  reservationsRoundTrip.push(reservationRoundTrip);
+                }
+              })
+            );
+
+            if (roundTrip.shuttle) {
+              const shuttleRoute = await db.ShuttleRoutes.findOne({
+                where: { id: roundTrip.shuttle.shuttleRouteId },
+                include: [
+                  {
+                    model: db.Shuttle,
+                    as: "ShuttleData",
+                    include: [
+                      {
+                        model: db.Coach,
+                        as: "CoachData",
+                      },
+                    ],
+                  },
+                ],
+                transaction: tx,
+              });
+              if (!shuttleRoute) {
+                throw new Error("Shuttle Route is not Available");
+              }
+              const remainingSlotShuttle =
+                shuttleRoute.ShuttleData.CoachData.capacity -
+                (await countOfShuttlePassenger(shuttleRoute.id));
+              if (remainingSlotShuttle < roundTrip.shuttle.quantity) {
+                throw new Error("Can not enough seats for shuttle");
+              }
+              await Promise.all(
+                reservationsRoundTrip.map(async (reservation) => {
+                  const [shuttlePassengerRoundTripFound, created] =
+                    await db.ShuttlePassengers.findOrCreate({
+                      where: {
+                        shuttleRouteId: roundTrip.shuttle.shuttleRouteId,
+                        reservationId: reservation.id,
+                      },
+                      defaults: {
+                        shuttleRouteId: roundTrip.shuttle.shuttleRouteId,
+                        reservationId: reservation.id,
+                      },
+                      transaction: tx,
+                    });
+                  if (!created) {
+                    throw new Error("This passenger is booking Shuttle");
+                  } else {
+                    shuttlePassengerRoundTrip.push(
+                      shuttlePassengerRoundTripFound
+                    );
+                  }
+                })
+              );
+            }
+          }
+        } catch (error) {
+          console.error("Error in transaction:", error);
+          throw new Error("Error in transaction: " + error.message);
         }
+        console.log("Transaction completed");
       }
     );
 
@@ -559,36 +566,43 @@ const cancelBookingTicket = async (rawData) => {
   try {
     const { reservations, reservationsRoundTrip } = rawData.body;
     const result = await db.sequelize.transaction(async (tx) => {
-      await Promise.all(
-        reservations.map(async (reservationId) => {
-          const reservation = await db.Reservation.findByPk(reservationId);
-          if (!reservation) {
-            throw new Error("Can not find reservation");
-          } else {
-            await db.Reservation.destroy({
-              where: { id: reservation.id },
-              transaction: tx,
-            });
-          }
-        })
-      );
-      if (reservationsRoundTrip) {
+      console.log("Transaction started");
+      try {
         await Promise.all(
-          reservationsRoundTrip.map(async (reservationId) => {
-            const reservationRoundTrip = await db.Reservation.findByPk(
-              reservationId
-            );
-            if (!reservationRoundTrip) {
-              throw new Error("Can not find reservation for round trip");
+          reservations.map(async (reservationId) => {
+            const reservation = await db.Reservation.findByPk(reservationId);
+            if (!reservation) {
+              throw new Error("Can not find reservation");
             } else {
               await db.Reservation.destroy({
-                where: { id: reservationRoundTrip.id },
+                where: { id: reservation.id },
                 transaction: tx,
               });
             }
           })
         );
+        if (reservationsRoundTrip) {
+          await Promise.all(
+            reservationsRoundTrip.map(async (reservationId) => {
+              const reservationRoundTrip = await db.Reservation.findByPk(
+                reservationId
+              );
+              if (!reservationRoundTrip) {
+                throw new Error("Can not find reservation for round trip");
+              } else {
+                await db.Reservation.destroy({
+                  where: { id: reservationRoundTrip.id },
+                  transaction: tx,
+                });
+              }
+            })
+          );
+        }
+      } catch (error) {
+        console.error("Error in transaction:", error);
+        throw new Error("Error in transaction: " + error.message);
       }
+      console.log("Transaction completed");
     });
     return apiReturns.success(200, "Canceled Booking Ticket Successfully");
   } catch (error) {
@@ -601,22 +615,29 @@ const confirmBookingTicket = async (rawData) => {
   try {
     const { passengers, reservations } = rawData.body;
     const result = await db.sequelize.transaction(async (tx) => {
-      if (passengers.length !== reservations.length) {
-        throw new Error("Fill full passenger for reservation");
+      console.log("Transaction started");
+      try {
+        if (passengers.length !== reservations.length) {
+          throw new Error("Fill full passenger for reservation");
+        }
+        await Promise.all(
+          passengers.map(async (passengerInfo, index) => {
+            const [passenger, created] = await db.Passenger.findOrCreate({
+              where: { phoneNumber: passengerInfo.phoneNumber },
+              defaults: passengerInfo,
+              transaction: tx,
+            });
+            const reservation = await db.Reservation.update(
+              { passengerId: passenger.id },
+              { where: { id: reservations[index] }, transaction: tx }
+            );
+          })
+        );
+      } catch (error) {
+        console.error("Error in transaction:", error);
+        throw new Error("Error in transaction: " + error.message);
       }
-      await Promise.all(
-        passengers.map(async (passengerInfo, index) => {
-          const [passenger, created] = await db.Passenger.findOrCreate({
-            where: { phoneNumber: passengerInfo.phoneNumber },
-            defaults: passengerInfo,
-            transaction: tx,
-          });
-          const reservation = await db.Reservation.update(
-            { passengerId: passenger.id },
-            { where: { id: reservations[index] }, transaction: tx }
-          );
-        })
-      );
+      console.log("Transaction completed");
     });
     return apiReturns.success(200, "Filled Information Successfully", result);
   } catch (error) {
