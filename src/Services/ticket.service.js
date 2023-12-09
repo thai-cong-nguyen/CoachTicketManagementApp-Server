@@ -315,64 +315,12 @@ const getUserTicketsHistory = async ({ page, limit, order, userId }) => {
   }
 };
 
-const fillTicketInfo = async (rawData) => {
-  try {
-    const data = rawData.body;
-    let res = [];
-    await Promise.all(
-      data.forEach(async (e) => {
-        const passenger = await db.Passenger.findOrCreate({
-          where: { phoneNumber: e.phoneNumber },
-          default: e.passenger,
-        });
-        const reservation = await db.Reservation.update(
-          { passengerId: passenger.id },
-          { where: { id: e.id } }
-        );
-        res.push({ passenger, reservation });
-      })
-    );
-    return apiReturns.success(200, "Fill Ticket Successful", res);
-  } catch (error) {
-    console.error(error);
-    return apiReturns.error(400, error.message);
-  }
-};
-
-const chooseSeatTicket = async (rawData) => {
-  try {
-    const user = rawData.user;
-    const { id, quantity, seatNumber } = rawData.body;
-    let res = [{ quantity: quantity, rows: [] }];
-    await db.transaction(async (t) => {
-      seatNumber.forEach(async (number) => {
-        const [reservation, created] = await db.Reservation.findOrCreate(
-          {
-            where: { seatNumber: number },
-            default: { userId: user.id, scheduleId: id, seatNumber: number },
-          },
-          { transaction: t }
-        );
-        if (!created) {
-          throw new Error("Seat is not Available");
-        }
-        res.rows.push(reservation);
-      });
-    });
-    return apiReturns.success(200, "Choose Seat Successfully", res);
-  } catch (error) {
-    console.error(error);
-    return apiReturns.error(400, error.message);
-  }
-};
-
 const createBookingTicket = async (rawData) => {
   try {
     // data get from request's body && response for the client.
     const {
       scheduleId,
       seats,
-      paymentId,
       departurePoint,
       arrivalPoint,
       shuttle,
@@ -413,9 +361,9 @@ const createBookingTicket = async (rawData) => {
                 defaults: {
                   userId: rawData.user.userId,
                   scheduleId: scheduleId,
+                  paymentId: "1",
                   seatNumber: seat,
                   reservationDate: currentTime,
-                  paymentId: paymentId,
                   departurePoint: departurePoint,
                   arrivalPoint: arrivalPoint,
                 },
@@ -508,8 +456,8 @@ const createBookingTicket = async (rawData) => {
                       userId: rawData.user.userId,
                       scheduleId: roundTrip.scheduleId,
                       seatNumber: seat,
+                      paymentId: "1",
                       reservationDate: currentTime,
-                      paymentId,
                       departurePoint: roundTrip.departurePoint,
                       arrivalPoint: roundTrip.arrivalPoint,
                       isRoundTrip: true,
@@ -656,7 +604,7 @@ const cancelBookingTicket = async (rawData) => {
 
 const confirmBookingTicket = async (rawData) => {
   try {
-    const { passengers, reservations } = rawData.body;
+    const { passengers, reservations, paymentId } = rawData.body;
     const result = await db.sequelize.transaction(async (tx) => {
       console.log("Transaction started");
       try {
@@ -671,7 +619,7 @@ const confirmBookingTicket = async (rawData) => {
               transaction: tx,
             });
             const reservation = await db.Reservation.update(
-              { passengerId: passenger.id },
+              { passengerId: passenger.id, paymentId: paymentId },
               { where: { id: reservations[index] }, transaction: tx }
             );
           })
@@ -807,8 +755,6 @@ const cancelTicket = async (rawData) => {
 
 module.exports = {
   getAllTickets,
-  fillTicketInfo,
-  chooseSeatTicket,
   getAllTicketsOfUsers,
   getUserTicketsHistory,
   createBookingTicket,
