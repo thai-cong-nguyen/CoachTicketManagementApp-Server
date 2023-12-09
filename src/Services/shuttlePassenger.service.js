@@ -57,9 +57,10 @@ module.exports = {
     }
   },
 
-  countOfShuttlePassenger: async (shuttleRouteId) => {
+  countOfShuttlePassenger: async (shuttleRouteId, transaction = null) => {
     const shuttlePassengers = await db.ShuttlePassengers.findAndCountAll({
       where: { shuttleRouteId: shuttleRouteId },
+      transaction: transaction ? transaction : null,
     });
     return shuttlePassengers ? shuttlePassengers.count : 0;
   },

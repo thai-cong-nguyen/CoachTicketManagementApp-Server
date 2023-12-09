@@ -347,14 +347,17 @@ const createBookingTicket = async (rawData) => {
     let shuttlePassengerRoundTrip = [];
     // processing for booking.
     const result = await db.sequelize.transaction(async (tx) => {
-      const schedule = await db.Schedule.findByPk(scheduleId);
+      const schedule = await db.Schedule.findByPk(scheduleId, {
+        transaction: tx,
+      });
       if (!schedule) {
         throw new Error("Can not find schedule");
       }
 
       const remainingSlot = await remainingSlotOfSchedule(
         scheduleId,
-        schedule.coachId
+        schedule.coachId,
+        tx
       );
 
       if (remainingSlot < seats.length) {
@@ -399,13 +402,14 @@ const createBookingTicket = async (rawData) => {
               ],
             },
           ],
+          transaction: tx,
         });
         if (!shuttleRoute) {
           throw new Error("Shuttle Route is not Available");
         }
         const remainingSlotShuttle =
           shuttleRoute.ShuttleData.CoachData.capacity -
-          (await countOfShuttlePassenger(shuttleRoute.id));
+          (await countOfShuttlePassenger(shuttleRoute.id, tx));
         if (remainingSlotShuttle < shuttle.quantity) {
           throw new Error("Can not enough seats for shuttle");
         }
@@ -432,7 +436,8 @@ const createBookingTicket = async (rawData) => {
       // roundTrip processing
       if (roundTrip) {
         const scheduledRoundTrip = await db.Schedule.findByPk(
-          roundTrip.scheduleId
+          roundTrip.scheduleId,
+          { transaction: tx }
         );
         if (!scheduledRoundTrip) {
           throw new Error("Can not find schedule for round Trip");
@@ -440,7 +445,8 @@ const createBookingTicket = async (rawData) => {
 
         const remainingSlotOfRoundTrip = await remainingSlotOfSchedule(
           roundTrip.scheduleId,
-          scheduledRoundTrip.coachId
+          scheduledRoundTrip.coachId,
+          tx
         );
 
         if (remainingSlotOfRoundTrip < roundTrip.seats.length) {
@@ -495,6 +501,7 @@ const createBookingTicket = async (rawData) => {
                 ],
               },
             ],
+            transaction: tx,
           });
           if (!shuttleRoute) {
             throw new Error("Shuttle Route is not Available");
