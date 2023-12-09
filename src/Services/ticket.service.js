@@ -605,7 +605,13 @@ const cancelBookingTicket = async (rawData) => {
 
 const confirmBookingTicket = async (rawData) => {
   try {
-    const { passengers, reservations, paymentId, discountId } = rawData.body;
+    const {
+      passengers,
+      reservations,
+      reservationsRoundTrip,
+      paymentId,
+      discountId,
+    } = rawData.body;
     const result = await db.sequelize.transaction(async (tx) => {
       console.log("Transaction started");
       try {
@@ -637,6 +643,12 @@ const confirmBookingTicket = async (rawData) => {
               where: { id: reservations[index] },
               transaction: tx,
             });
+            if (reservationsRoundTrip[index]) {
+              await db.Reservation.update(info, {
+                where: { id: reservationsRoundTrip[index] },
+                transaction: tx,
+              });
+            }
           })
         );
       } catch (error) {

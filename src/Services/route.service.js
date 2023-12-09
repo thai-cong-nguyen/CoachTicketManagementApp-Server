@@ -88,7 +88,7 @@ const createNewRoute = async (rawData) => {
 const updateRoute = async (rawData) => {
   try {
     const { routeId } = rawData.params;
-    const { ...updateData } = rawData.body;
+    const { places, ...updateData } = rawData.body;
     const isUpdated = await db.Route.update(updateData, {
       where: { id: routeId },
     });
