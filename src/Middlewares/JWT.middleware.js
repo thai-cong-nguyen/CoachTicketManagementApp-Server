@@ -5,7 +5,6 @@ const JWT_SECRET_ACCESS_TOKEN = process.env.JWT_SECRET_ACCESS_TOKEN;
 
 const verifyJWT = async (req, res, next) => {
   const token = req.headers.authorization;
-  console.log(token);
   if (!token) {
     return notAuthError("Require authorization", res);
   }
