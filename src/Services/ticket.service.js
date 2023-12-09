@@ -359,8 +359,7 @@ const createBookingTicket = async (rawData) => {
 
         const remainingSlot = await remainingSlotOfSchedule(
           scheduleId,
-          schedule.coachId,
-          tx
+          schedule.coachId
         );
 
         if (remainingSlot < seats.length) {
@@ -412,7 +411,7 @@ const createBookingTicket = async (rawData) => {
           }
           const remainingSlotShuttle =
             shuttleRoute.ShuttleData.CoachData.capacity -
-            (await countOfShuttlePassenger(shuttleRoute.id, tx));
+            (await countOfShuttlePassenger(shuttleRoute.id));
           if (remainingSlotShuttle < shuttle.quantity) {
             throw new Error("Can not enough seats for shuttle");
           }
@@ -450,8 +449,7 @@ const createBookingTicket = async (rawData) => {
 
           const remainingSlotOfRoundTrip = await remainingSlotOfSchedule(
             roundTrip.scheduleId,
-            scheduledRoundTrip.coachId,
-            tx
+            scheduledRoundTrip.coachId
           );
 
           if (remainingSlotOfRoundTrip < roundTrip.seats.length) {
@@ -574,7 +572,6 @@ const cancelBookingTicket = async (rawData) => {
           }
         })
       );
-
       if (reservationsRoundTrip) {
         await Promise.all(
           reservationsRoundTrip.map(async (reservationId) => {
