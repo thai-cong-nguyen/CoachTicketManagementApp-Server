@@ -337,7 +337,8 @@ const createBookingTicket = async (rawData) => {
       async (tx) => {
         console.log("Create Booking Ticket Transaction started");
         try {
-          const currentTime = new Date().toISOString;
+          const currentTime = new Date().toISOString();
+          console.log("Current Time: " + currentTime);
           const schedule = await db.Schedule.findByPk(scheduleId, {
             transaction: tx,
           });
