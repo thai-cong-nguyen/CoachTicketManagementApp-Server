@@ -63,9 +63,15 @@ const createNewStaff = async (rawData) => {
     if (!userName || !password || !fullName || !phoneNumber) {
       throw new Error("Information is not enough for creating");
     }
+    const isUserAccountExisted = await db.UserAccount.findOne({
+      where: { userName: userName },
+    });
+    if (isUserAccountExisted) {
+      throw new Error("User name is existed");
+    }
     const isStaffExisted = await db.Staff.findOne({
       where: {
-        [Op.or]: { userName: userName, email: email, phoneNumber: phoneNumber },
+        [Op.or]: { email: email, phoneNumber: phoneNumber },
       },
     });
     if (isStaffExisted) {
