@@ -66,7 +66,26 @@ const getAllSchedules = async ({
 const createNewSchedule = async (rawData) => {
   try {
     const scheduleData = rawData.body;
-    await db.Schedule.create(scheduleData);
+    await db.sequelize.transaction(async (tx) => {
+      const schedule = await db.Schedule.create(scheduleData, {
+        transaction: tx,
+      });
+      if (!schedule) {
+        throw new Error("Can not create schedule");
+      }
+      if (scheduleData.driverId) {
+        await db.Staff.update(
+          { status: false },
+          { where: { id: scheduleData.driverId }, transaction: tx }
+        );
+      }
+      if (scheduleData.coachAssistantId) {
+        await db.Staff.update(
+          { status: false },
+          { where: { id: scheduleData.coachAssistantId }, transaction: tx }
+        );
+      }
+    });
     return apiReturns.success(200, "Create a new Schedule Successfully");
   } catch (error) {
     console.log(error.message);
@@ -77,8 +96,37 @@ const createNewSchedule = async (rawData) => {
 const updateSchedule = async (rawData) => {
   try {
     const updateData = rawData.body;
-    const { id } = rawData.params;
-    await db.Schedule.update(updateData, { where: { id: id } });
+    const { scheduleId } = rawData.params;
+    await db.sequelize.transaction(async (tx) => {
+      const schedule = await db.Schedule.findByPk(scheduleId);
+      if (!schedule) {
+        throw new Error("Can not find schedule");
+      }
+      const updatedSchedule = await db.Schedule.update(updateData, {
+        where: { id: scheduleId },
+        transaction: tx,
+      });
+      if (updatedSchedule.driverId !== schedule.driverId) {
+        await db.Staff.update(
+          { status: false },
+          { where: { id: updatedSchedule.driverId }, transaction: tx }
+        );
+        await db.Staff.update(
+          { status: false },
+          { where: { id: schedule.driverId }, transaction: tx }
+        );
+      }
+      if (updatedSchedule.coachAssistantId !== schedule.coachAssistantId) {
+        await db.Staff.update(
+          { status: false },
+          { where: { id: updatedSchedule.coachAssistantId }, transaction: tx }
+        );
+        await db.Staff.update(
+          { status: false },
+          { where: { id: schedule.coachAssistantId }, transaction: tx }
+        );
+      }
+    });
     return apiReturns.success(200, "Update Schedule Successfully");
   } catch (error) {
     console.error(error.message);
@@ -131,6 +179,41 @@ const remainingSlotOfSchedule = async (
     : 0;
 };
 
+const finishedSchedule = async (rawData) => {
+  try {
+    const { scheduleId } = rawData.params;
+    await db.sequelize.transaction(async (tx) => {
+      console.log("Transaction started");
+      try {
+        const schedule = await db.Schedule.findByPk(scheduleId);
+        if (!schedule) {
+          throw new Error("Schedule not found");
+        }
+        await db.Schedule.update(
+          { status: "1" },
+          { where: { id: scheduleId }, transaction: tx }
+        );
+        await db.Staff.update(
+          { status: true },
+          { where: { id: schedule.driverId }, transaction: tx }
+        );
+        await db.Staff.update(
+          { status: true },
+          { where: { id: schedule.coachAssistantId }, transaction: tx }
+        );
+      } catch (error) {
+        console.error("Error in transaction:", error);
+        throw new Error("Error in transaction: " + error.message);
+      }
+      console.log("Transaction commit");
+    });
+    return apiReturns.success(200, "Schedule Finished Successfully");
+  } catch (error) {
+    console.error(error);
+    return apiReturns.error(400, error.message);
+  }
+};
+
 module.exports = {
   getAllSchedules,
   createNewSchedule,
@@ -138,4 +221,5 @@ module.exports = {
   updateSchedule,
   countNumberOfPassengerByScheduleId,
   remainingSlotOfSchedule,
+  finishedSchedule,
 };

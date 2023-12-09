@@ -5,6 +5,7 @@ const {
   createNewScheduleController,
   updateScheduleController,
   deleteScheduleController,
+  finishedScheduleController,
 } = require("../Controllers/schedule.controller");
 
 const { verifyJWT } = require("../Middlewares/JWT.middleware");
@@ -14,7 +15,8 @@ router.use(verifyJWT);
 router.get("/", getAllSchedulesController);
 router.use(isAdmin);
 router.post("/", createNewScheduleController);
-router.patch("/:id", updateScheduleController);
-router.delete("/:id", deleteScheduleController);
+router.patch("/:scheduleId", updateScheduleController);
+router.delete("/:scheduleId", deleteScheduleController);
+router.patch("/finish/:scheduleId", finishedScheduleController);
 
 module.exports = router;

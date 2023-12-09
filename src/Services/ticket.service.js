@@ -284,7 +284,7 @@ const getAllTicketsOfUsers = async ({ page, limit, order, ...query }) => {
     });
     const historyTickets = await getTickets({
       queries,
-      status: { [Op.notIn]: ["2", "4"] },
+      status: "4",
       ...query,
     });
     const res = { current: currentTickets, history: historyTickets };
@@ -306,7 +306,7 @@ const getUserTicketsHistory = async ({ page, limit, order, userId }) => {
     queries.userId = userId;
     const historyTickets = await getTickets({
       queries,
-      [Op.notIn]: ["2", "3"],
+      status: "4",
     });
     return apiReturns.success(200, "Get Successfully", historyTickets);
   } catch (error) {
