@@ -40,9 +40,8 @@ module.exports = {
   },
   addDiscountForUser: async (rawData) => {
     try {
-      let { userId, discountId } = rawData.body;
+      const { userId, discountId } = rawData.body;
       let userDiscounts = [];
-
       userId.forEach((user) => {
         discountId.forEach((discount) => {
           let obj = {};
