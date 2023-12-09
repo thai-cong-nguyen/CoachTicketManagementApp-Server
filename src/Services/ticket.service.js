@@ -628,6 +628,7 @@ const confirmBookingTicket = async (rawData) => {
             const info = {
               passengerId: passenger.id,
               paymentId: paymentId,
+              reservationPhoneNumber: passengerInfo.phoneNumber,
             };
             if (discountId) {
               info.discountId = discountId;
