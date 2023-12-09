@@ -22,9 +22,9 @@ const {
 // Staff Router
 router.use(verifyJWT);
 router.get("/", getAllStaffsController);
-router.use("/works", isStaff, getWorkOfStaffController);
 router.use(isAdmin);
-router.post("/", createNewStaffControllers);
+router.use("/works", getWorkOfStaffController);
+router.post("/", uploadImageMiddleware, createNewStaffControllers);
 router.delete("/:staffId", deleteStaffsByIdController);
 
 module.exports = router;
