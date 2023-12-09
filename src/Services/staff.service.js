@@ -120,7 +120,7 @@ const createNewStaff = async (rawData) => {
       const downloadURL = await getDownloadURL(snapshot.ref);
       account.avatar = downloadURL;
     }
-    await db.Sequelize.Transaction(async (tx) => {
+    await db.sequelize.transaction(async (tx) => {
       const userAccount = await db.UserAccount.create(
         {
           ...account,
