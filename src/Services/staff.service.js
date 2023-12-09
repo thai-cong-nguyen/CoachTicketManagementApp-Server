@@ -5,7 +5,18 @@ const db = require("../Models/index");
 const apiReturns = require("../Helpers/apiReturns.helper");
 const { hashPassword } = require("../Services/auth.service");
 const { getAllTrips } = require("../Services/trip.service");
+const { initializeApp } = require("firebase/app");
+const { firebaseConfig } = require("../Configs/firebase.config");
+const {
+  getStorage,
+  ref,
+  getDownloadURL,
+  uploadBytesResumable,
+} = require("firebase/storage");
 
+initializeApp(firebaseConfig);
+
+const storage = getStorage();
 const getAllStaffs = async ({ page, limit, order, ...query }) => {
   try {
     const queries = { raw: true, nest: true };
