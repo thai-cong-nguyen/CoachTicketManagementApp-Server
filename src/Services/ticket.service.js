@@ -119,7 +119,6 @@ const getTickets = async ({ queries, reservationId, ...query }) => {
             [Op.in]: ticket.reservationId,
           },
         },
-        attributes: ["reservationId", "shuttleRouteId"],
         include: [
           {
             model: db.ShuttleRoutes,
@@ -193,8 +192,30 @@ const getTickets = async ({ queries, reservationId, ...query }) => {
       const ticketRoundTrip = await filterReservationToTickets(
         reservationsRoundTrip
       );
+      // shuttle Round Trip
+      const shuttlePassengerRoundTrip = await db.ShuttlePassengers.findAll({
+        where: {
+          reservationId: {
+            [Op.in]: ticketRoundTrip.reservationId,
+          },
+        },
+        include: [
+          {
+            model: db.ShuttleRoutes,
+            as: "ShuttleRouteData",
+            include: [
+              {
+                model: db.Shuttle,
+                as: "ShuttleData",
+                include: [{ model: db.Coach, as: "CoachData" }],
+              },
+            ],
+          },
+        ],
+      });
       ticket.ShuttleTicketData = shuttlePassenger;
       ticket.RoundTripTicketData = ticketRoundTrip;
+      ticket.RoundTripTicketData.ShuttleTicketData = shuttlePassengerRoundTrip;
       ticket.ScheduleData.CoachData.ServiceData = serviceOfCoach;
     })
   );
@@ -371,7 +392,7 @@ const createBookingTicket = async (rawData) => {
           await Promise.all(
             seats.map(async (seat) => {
               const [reservation, created] = await db.Reservation.findOrCreate({
-                where: { seatNumber: seat },
+                where: { scheduleId: scheduleId, seatNumber: seat },
                 defaults: {
                   userId: rawData.user.userId,
                   scheduleId: scheduleId,
@@ -463,13 +484,8 @@ const createBookingTicket = async (rawData) => {
                 const [reservationRoundTrip, created] =
                   await db.Reservation.findOrCreate({
                     where: {
-                      userId: rawData.user.userId,
                       scheduleId: roundTrip.scheduleId,
                       seatNumber: seat,
-                      paymentId,
-                      departurePoint: roundTrip.departurePoint,
-                      arrivalPoint: roundTrip.arrivalPoint,
-                      isRoundTrip: true,
                     },
                     defaults: {
                       userId: rawData.user.userId,
