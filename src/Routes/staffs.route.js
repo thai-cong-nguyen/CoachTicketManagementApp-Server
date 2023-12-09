@@ -6,11 +6,12 @@ const { verifyJWT } = require("../Middlewares/JWT.middleware");
 const {
   getAllStaffsController,
   deleteStaffsByIdController,
-  updateStaffsControllers,
   createNewStaffControllers,
   getWorkOfStaffController,
 } = require("../Controllers/staff.controller");
-
+const {
+  uploadImageMiddleware,
+} = require("../Middlewares/uploadImage.middleware");
 const {
   isAdmin,
   isStaff,
@@ -24,7 +25,6 @@ router.get("/", getAllStaffsController);
 router.use("/works", isStaff, getWorkOfStaffController);
 router.use(isAdmin);
 router.post("/", createNewStaffControllers);
-router.delete("/:id", deleteStaffsByIdController);
-router.patch("/:id", updateStaffsControllers);
+router.delete("/:staffId", deleteStaffsByIdController);
 
 module.exports = router;

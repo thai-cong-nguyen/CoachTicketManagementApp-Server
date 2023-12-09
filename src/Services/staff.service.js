@@ -14,14 +14,21 @@ const getAllStaffs = async ({ page, limit, order, ...query }) => {
     queries.offset = offset * fLimit;
     queries.limit = fLimit;
     if (order) queries.order = order;
-    const staffs = await db.UserAccount.findAndCountAll({
+    const staffs = await db.Staff.findAndCountAll({
       where: {
         ...query,
-        roleId: "2",
       },
-      attributes: { exclude: ["password"] },
-      includes: [{ model: db.Staff, as: "StaffData" }],
       ...queries,
+      include: [
+        {
+          model: db.UserAccount,
+          as: "UserAccountData",
+          where: {
+            roleId: "2",
+          },
+          attributes: { exclude: ["password"] },
+        },
+      ],
     });
     return apiReturns.success(200, "Get All Staffs Successfully", staffs);
   } catch (error) {
@@ -30,24 +37,10 @@ const getAllStaffs = async ({ page, limit, order, ...query }) => {
   }
 };
 
-const updateStaff = async (rawData) => {
-  try {
-    const data = rawData.body;
-    const { id } = rawData.params;
-    const staff = await db.Staff.update({ data }, { where: { id: id } });
-    if (staff) {
-      return apiReturns.success(200, "Update Staff Successfully", staff);
-    }
-  } catch (error) {
-    console.error(error.message);
-    return apiReturns.error(400, error.message);
-  }
-};
-
 const deleteStaff = async (rawData) => {
   try {
-    const { id } = rawData.params;
-    await db.Staff.destroy({ where: { id: id } });
+    const { staffId } = rawData.params;
+    await db.Staff.destroy({ where: { id: staffId } });
     return apiReturns.success(200, "Delete Staff Successfully");
   } catch (error) {
     console.error(error.message);
@@ -57,8 +50,19 @@ const deleteStaff = async (rawData) => {
 
 const createNewStaff = async (rawData) => {
   try {
-    const { userName, password, fullName, email, phoneNumber, positionId } =
-      rawData.body;
+    const {
+      userName,
+      password,
+      fullName,
+      email,
+      phoneNumber,
+      positionId,
+      gender,
+    } = rawData.body;
+    const file = rawData.file;
+    if (!userName || !password || !fullName || !phoneNumber) {
+      throw new Error("Information is not enough for creating");
+    }
     const isStaffExisted = await db.Staff.findOne({
       where: {
         [Op.or]: { userName: userName, email: email, phoneNumber: phoneNumber },
@@ -67,26 +71,54 @@ const createNewStaff = async (rawData) => {
     if (isStaffExisted) {
       throw new Error(`Staff already exists`);
     }
-    await db.Sequelize.Transaction(async (tx) => {
-      const userAccount = await db.UserAccount.create({
-        userName,
-        password: await hashPassword(password),
-        roleId: "2",
+    let info = {
+      fullName: fullName,
+      email: email,
+      phoneNumber: phoneNumber,
+      positionId: positionId,
+      gender: gender,
+    };
+    let account = {
+      userName: userName,
+      password: await hashPassword(password),
+    };
+    if (file) {
+      const dateTime = new Date().toLocaleString("en-US", {
+        timeZone: "Asia/ho_chi_minh",
       });
+      const storageRef = ref(
+        storage,
+        `images/${file.originalname + "       " + dateTime}`
+      );
+      const metaData = {
+        contentType: file.mimetype,
+        cacheControl: "public, max-age=31536000",
+      };
+      // Upload the file in the bucket storage
+      const snapshot = await uploadBytesResumable(
+        storageRef,
+        file.buffer,
+        metaData
+      );
+      const downloadURL = await getDownloadURL(snapshot.ref);
+      account.avatar = downloadURL;
+    }
+    await db.Sequelize.Transaction(async (tx) => {
+      const userAccount = await db.UserAccount.create(
+        {
+          ...account,
+          roleId: "2",
+        },
+        { transaction: tx }
+      );
       if (!userAccount) {
         throw new Error("Can not create user account");
       }
-      const staff = await db.Staff.create({
-        fullName: fullName,
-        email: email,
-        phoneNumber: phoneNumber,
-        userId: userAccount.id,
-        positionId,
-      });
+      const staff = await db.Staff.create(info, { transaction: tx });
     });
     return apiReturns.success(200, "Create Staff Successfully");
   } catch (error) {
-    console.error(error.message);
+    console.error(error);
     return apiReturns.error(400, error.message);
   }
 };
@@ -106,7 +138,6 @@ const getWorkOfStaff = async (rawData) => {
     };
     const currentTrips = await getAllTrips({ ...query, status: "0" });
     const historyTrips = await getAllTrips({ ...query, status: "1" });
-    console.log(currentTrips);
     const result = {
       currentTrips: currentTrips.data.rows,
       historyTrips: historyTrips.data.rows,
@@ -121,7 +152,6 @@ const getWorkOfStaff = async (rawData) => {
 module.exports = {
   getAllStaffs,
   createNewStaff,
-  updateStaff,
   deleteStaff,
   getWorkOfStaff,
 };

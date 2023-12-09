@@ -119,6 +119,7 @@ const getTickets = async ({ queries, reservationId, ...query }) => {
             [Op.in]: ticket.reservationId,
           },
         },
+        attributes: ["id", "reservationId", "shuttleRouteId"],
         include: [
           {
             model: db.ShuttleRoutes,
@@ -134,10 +135,20 @@ const getTickets = async ({ queries, reservationId, ...query }) => {
         ],
       });
       // RoundTrip ticket
-      const queryRoundTripTicket = query;
-      query.isRoundTrip = true;
+      const queryRoundTripTicket = {};
+      queryRoundTripTicket.isRoundTrip = true;
+      queryRoundTripTicket.userId = ticket.UserAccountData.id;
+      queryRoundTripTicket["$ScheduleData.RouteData.departurePlace$"] =
+        ticket.ScheduleData.RouteData.arrivalPlace;
+      queryRoundTripTicket["$ScheduleData.RouteData.arrivalPlace$"] =
+        ticket.ScheduleData.RouteData.departurePlace;
+      queryRoundTripTicket["$ScheduleData.StartPlaceData.placeName$"] =
+        ticket.ScheduleData.ArrivalPlaceData.placeName;
+      queryRoundTripTicket["$ScheduleData.ArrivalPlaceData.placeName$"] =
+        ticket.ScheduleData.StartPlaceData.placeName;
+      queryRoundTripTicket.reservationDate = ticket.reservationDate;
       const reservationsRoundTrip = await db.Reservation.findAndCountAll({
-        where: query,
+        where: queryRoundTripTicket,
         include: [
           {
             model: db.Schedule,
@@ -193,29 +204,34 @@ const getTickets = async ({ queries, reservationId, ...query }) => {
         reservationsRoundTrip
       );
       // shuttle Round Trip
-      const shuttlePassengerRoundTrip = await db.ShuttlePassengers.findAll({
-        where: {
-          reservationId: {
-            [Op.in]: ticketRoundTrip.reservationId,
-          },
-        },
-        include: [
-          {
-            model: db.ShuttleRoutes,
-            as: "ShuttleRouteData",
+      const shuttlePassengerRoundTrip = await Promise.all(
+        ticketRoundTrip.map(async (ticket) => {
+          return await db.ShuttlePassengers.findAll({
+            where: {
+              reservationId: {
+                [Op.in]: ticket.reservationId,
+              },
+            },
+            attributes: ["id", "reservationId", "shuttleRouteId"],
             include: [
               {
-                model: db.Shuttle,
-                as: "ShuttleData",
-                include: [{ model: db.Coach, as: "CoachData" }],
+                model: db.ShuttleRoutes,
+                as: "ShuttleRouteData",
+                include: [
+                  {
+                    model: db.Shuttle,
+                    as: "ShuttleData",
+                    include: [{ model: db.Coach, as: "CoachData" }],
+                  },
+                ],
               },
             ],
-          },
-        ],
-      });
+          });
+        }, [])
+      );
       ticket.ShuttleTicketData = shuttlePassenger;
       ticket.RoundTripTicketData = ticketRoundTrip;
-      ticket.RoundTripTicketData.ShuttleTicketData = shuttlePassengerRoundTrip;
+      ticket.ShuttleTicketRoundTripData = shuttlePassengerRoundTrip;
       ticket.ScheduleData.CoachData.ServiceData = serviceOfCoach;
     })
   );
@@ -248,7 +264,7 @@ const getAllTickets = async ({
     const tickets = await getTickets({ queries, reservationId, ...query });
     return apiReturns.success(200, "Get Successfully", tickets);
   } catch (error) {
-    console.error(error.message);
+    console.error(error);
     return apiReturns.error(400, error.message);
   }
 };
@@ -294,7 +310,7 @@ const getUserTicketsHistory = async ({ page, limit, order, userId }) => {
     });
     return apiReturns.success(200, "Get Successfully", historyTickets);
   } catch (error) {
-    console.error(error.message);
+    console.error(error);
     return apiReturns.error(400, error.message);
   }
 };
@@ -318,7 +334,7 @@ const fillTicketInfo = async (rawData) => {
     );
     return apiReturns.success(200, "Fill Ticket Successful", res);
   } catch (error) {
-    console.error(error.message);
+    console.error(error);
     return apiReturns.error(400, error.message);
   }
 };
@@ -345,7 +361,7 @@ const chooseSeatTicket = async (rawData) => {
     });
     return apiReturns.success(200, "Choose Seat Successfully", res);
   } catch (error) {
-    console.error(error.message);
+    console.error(error);
     return apiReturns.error(400, error.message);
   }
 };
@@ -373,6 +389,7 @@ const createBookingTicket = async (rawData) => {
       async (tx) => {
         console.log("Create Booking Ticket Transaction started");
         try {
+          const currentTime = new Date().toISOString;
           const schedule = await db.Schedule.findByPk(scheduleId, {
             transaction: tx,
           });
@@ -397,7 +414,7 @@ const createBookingTicket = async (rawData) => {
                   userId: rawData.user.userId,
                   scheduleId: scheduleId,
                   seatNumber: seat,
-                  reservationDate: new Date().toISOString(),
+                  reservationDate: currentTime,
                   paymentId: paymentId,
                   departurePoint: departurePoint,
                   arrivalPoint: arrivalPoint,
@@ -491,7 +508,7 @@ const createBookingTicket = async (rawData) => {
                       userId: rawData.user.userId,
                       scheduleId: roundTrip.scheduleId,
                       seatNumber: seat,
-                      reservationDate: new Date().toISOString(),
+                      reservationDate: currentTime,
                       paymentId,
                       departurePoint: roundTrip.departurePoint,
                       arrivalPoint: roundTrip.arrivalPoint,
