@@ -608,6 +608,7 @@ const confirmBookingTicket = async (rawData) => {
     const {
       passengers,
       reservations,
+      passengerRoundTrip,
       reservationsRoundTrip,
       paymentId,
       discountId,
@@ -643,14 +644,31 @@ const confirmBookingTicket = async (rawData) => {
               where: { id: reservations[index] },
               transaction: tx,
             });
-            if (reservationsRoundTrip[index]) {
-              await db.Reservation.update(info, {
+          })
+        );
+        if (passengerRoundTrip && reservationsRoundTrip) {
+          await Promise.all(
+            passengerRoundTrip.map(async (passengerInfo, index) => {
+              const [passenger, created] = await db.Passenger.findOrCreate({
+                where: { phoneNumber: passengerInfo.phoneNumber },
+                defaults: passengerInfo,
+                transaction: tx,
+              });
+              const info = {
+                passengerId: passenger.id,
+                paymentId: paymentId,
+                reservationPhoneNumber: passengerInfo.phoneNumber,
+              };
+              if (discountId) {
+                info.discountId = discountId;
+              }
+              const reservation = await db.Reservation.update(info, {
                 where: { id: reservationsRoundTrip[index] },
                 transaction: tx,
               });
-            }
-          })
-        );
+            })
+          );
+        }
       } catch (error) {
         console.error("Error in transaction:", error);
         throw new Error("Error in transaction: " + error.message);
@@ -709,6 +727,7 @@ const cancelTicket = async (rawData) => {
       shuttlePassenger,
       shuttlePassengerRoundTrip,
     } = rawData.body;
+    console.log("Body: ", rawData.body);
     await db.sequelize.transaction(async (tx) => {
       await Promise.all(
         reservations.map(async (data) => {
