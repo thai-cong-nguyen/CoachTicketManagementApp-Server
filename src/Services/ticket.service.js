@@ -341,6 +341,7 @@ const createBookingTicket = async (rawData) => {
       shuttle,
       roundTrip,
     } = rawData.body;
+    console.log("Body: ", rawData.body);
     let reservations = [];
     let shuttlePassenger = [];
     let reservationsRoundTrip = [];
@@ -386,6 +387,7 @@ const createBookingTicket = async (rawData) => {
           }
         })
       );
+      console.log(reservations);
       // shuttle processing
       if (shuttle) {
         const shuttleRoute = await db.ShuttleRoutes.findOne({
