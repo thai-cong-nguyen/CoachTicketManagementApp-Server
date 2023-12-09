@@ -350,7 +350,7 @@ const createBookingTicket = async (rawData) => {
     const result = await db.sequelize.transaction(
       { logging: console.log },
       async (tx) => {
-        console.log("Transaction started");
+        console.log("Create Booking Ticket Transaction started");
         try {
           const schedule = await db.Schedule.findByPk(scheduleId, {
             transaction: tx,
@@ -546,7 +546,7 @@ const createBookingTicket = async (rawData) => {
           console.error("Error in transaction:", error);
           throw new Error("Error in transaction: " + error.message);
         }
-        console.log("Transaction completed");
+        console.log("Create Booking Ticket Transaction completed");
       }
     );
 
@@ -565,46 +565,56 @@ const createBookingTicket = async (rawData) => {
 const cancelBookingTicket = async (rawData) => {
   try {
     const { reservations, reservationsRoundTrip } = rawData.body;
-    const result = await db.sequelize.transaction(async (tx) => {
-      console.log("Transaction started");
-      try {
-        await Promise.all(
-          reservations.map(async (reservationId) => {
-            const reservation = await db.Reservation.findByPk(reservationId);
-            if (!reservation) {
-              throw new Error("Can not find reservation");
-            } else {
-              await db.Reservation.destroy({
-                where: { id: reservation.id },
-                transaction: tx,
-              });
-            }
-          })
-        );
-        if (reservationsRoundTrip) {
+    const result = await db.sequelize.transaction(
+      { logging: console.log },
+      async (tx) => {
+        console.log("Cancel Booking Ticket Transaction started");
+        try {
+          if (!reservations) {
+            throw new Error("Reservations data is not available");
+          }
           await Promise.all(
-            reservationsRoundTrip.map(async (reservationId) => {
-              const reservationRoundTrip = await db.Reservation.findByPk(
-                reservationId
-              );
-              if (!reservationRoundTrip) {
-                throw new Error("Can not find reservation for round trip");
+            reservations.map(async (reservationId) => {
+              const reservation = await db.Reservation.findByPk(reservationId);
+              if (!reservation) {
+                throw new Error("Can not find reservation");
               } else {
                 await db.Reservation.destroy({
-                  where: { id: reservationRoundTrip.id },
+                  where: { id: reservation.id },
                   transaction: tx,
                 });
               }
             })
           );
+          if (reservationsRoundTrip) {
+            await Promise.all(
+              reservationsRoundTrip.map(async (reservationId) => {
+                const reservationRoundTrip = await db.Reservation.findByPk(
+                  reservationId
+                );
+                if (!reservationRoundTrip) {
+                  throw new Error("Can not find reservation for round trip");
+                } else {
+                  await db.Reservation.destroy({
+                    where: { id: reservationRoundTrip.id },
+                    transaction: tx,
+                  });
+                }
+              })
+            );
+          }
+        } catch (error) {
+          console.error("Error in transaction:", error);
+          throw new Error("Error in transaction: " + error.message);
         }
-      } catch (error) {
-        console.error("Error in transaction:", error);
-        throw new Error("Error in transaction: " + error.message);
+        console.log("Cancel Booking Ticket Transaction completed");
       }
-      console.log("Transaction completed");
-    });
-    return apiReturns.success(200, "Canceled Booking Ticket Successfully");
+    );
+    return apiReturns.success(
+      200,
+      "Canceled Booking Ticket Successfully",
+      result
+    );
   } catch (error) {
     console.log(error);
     return apiReturns.error(400, error.message);
