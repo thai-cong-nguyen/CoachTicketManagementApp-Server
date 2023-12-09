@@ -86,43 +86,17 @@ const updateSchedule = async (rawData) => {
   }
 };
 
-const deleteScheduleById = async (id) => {
-  const [ratings, reservations, shuttles, staffReports] = await Promise.all([
-    db.Rating.findAndCountAll({ where: { scheduleId: id } }),
-    db.Reservation.findAndCountAll({ where: { scheduleId: id } }),
-    db.Shuttle.findAndCountAll({ where: { scheduleId: id } }),
-    db.StaffReport.findAndCountAll({ where: { scheduleId: id } }),
-  ]);
-
-  await Promise.all([
-    ...ratings.rows.map((rating) => deleteRatingById(rating.id)),
-    ...reservations.rows.map((reservation) =>
-      deleteReservationById(reservation.id)
-    ),
-    ...shuttles.rows.map((shuttle) => deleteShuttleById(shuttle.id)),
-    ...staffReports.rows.map((staffReport) =>
-      deleteStaffReportById(staffReport.id)
-    ),
-  ]);
-};
-
 const deleteSchedule = async (rawData) => {
   try {
-    const { id } = rawData.params;
-    const reservations = await db.Reservation.findAndCountAll({
-      where: { scheduleId: id },
-    });
-    if (reservations.rows > 0) {
-      await Promise.all(
-        reservations.map(async (reservation) => {
-          await deleteReservation(reservation.id);
-        })
-      );
+    const { scheduleId } = rawData.params;
+    const schedule = await db.Schedule.findByPk(scheduleId);
+    if (!schedule) {
+      throw new Error("Schedule not found");
     }
-    await db.Schedule.destroy({ where: { id: id } });
+    await db.Schedule.destroy({ where: { id: scheduleId } });
     return apiReturns.success(200, "Delete Schedule Successfully");
   } catch (error) {
-    console.error(error.message);
+    console.error(error);
     return apiReturns.error(400, error.message);
   }
 };
@@ -160,7 +134,6 @@ const remainingSlotOfSchedule = async (
 module.exports = {
   getAllSchedules,
   createNewSchedule,
-  deleteScheduleById,
   deleteSchedule,
   updateSchedule,
   countNumberOfPassengerByScheduleId,

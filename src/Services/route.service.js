@@ -103,16 +103,14 @@ const updateRoute = async (rawData) => {
   }
 };
 
-const deleteRouteById = async (id) => {
-  await deleteScheduleById(i);
-  const schedules = await db.Schedule.findAndCountAll();
-  await db.Route.destroy({ where: { id: id } });
-};
-
 const deleteRoute = async (rawData) => {
   try {
     const { routeId } = rawData.params;
-    await deleteRouteById(routeId);
+    const route = await db.Route.findByPk(routeId);
+    if (!route) {
+      throw new Error("Route not found");
+    }
+    await db.Route.destroy({ where: { id: routeId } });
     return apiReturns.success(200, "Delete Route Successful");
   } catch (error) {
     console.error(error.message);
@@ -125,5 +123,4 @@ module.exports = {
   createNewRoute,
   updateRoute,
   deleteRoute,
-  deleteRouteById,
 };
