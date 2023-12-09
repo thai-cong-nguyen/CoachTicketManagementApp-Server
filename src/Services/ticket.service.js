@@ -284,7 +284,7 @@ const getAllTicketsOfUsers = async ({ page, limit, order, ...query }) => {
     });
     const historyTickets = await getTickets({
       queries,
-      status: { [Op.notIn]: ["0", "1"] },
+      status: { [Op.notIn]: ["2", "4"] },
       ...query,
     });
     const res = { current: currentTickets, history: historyTickets };
