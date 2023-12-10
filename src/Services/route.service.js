@@ -187,7 +187,7 @@ const updateRoute = async (rawData) => {
           }
         }
       }
-      const updatedRoute = await db.Route.update(data, {
+      const updatedRoute = await db.Route.update(updateData, {
         where: { id: routeId },
         transaction: tx,
       });
