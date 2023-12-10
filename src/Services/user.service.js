@@ -135,8 +135,15 @@ const deleteUserAccountById = async (rawData) => {
 
 const updateUserAccountById = async (rawData) => {
   try {
-    const { fullName, email, phoneNumber, userName, address, positionId } =
-      rawData.body;
+    const {
+      fullName,
+      email,
+      phoneNumber,
+      userName,
+      address,
+      positionId,
+      password,
+    } = rawData.body;
     const file = await rawData.file;
     const userId = rawData.params.userId;
     let updatedInfo = {};
@@ -145,6 +152,7 @@ const updateUserAccountById = async (rawData) => {
     if (email) updatedInfo.email = email;
     if (phoneNumber) updatedInfo.phoneNumber = phoneNumber;
     if (address) updatedInfo.address = address;
+    if (password) updatedInfo.password = await hashPassword(password);
     const user = await db.UserAccount.findByPk(userId, {
       include: [{ model: db.Role, as: "RoleData" }],
     });

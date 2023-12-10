@@ -37,7 +37,6 @@ const getAllStaffs = async ({ page, limit, order, ...query }) => {
           where: {
             roleId: "2",
           },
-          attributes: { exclude: ["password"] },
         },
       ],
     });

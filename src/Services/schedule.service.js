@@ -87,12 +87,30 @@ const createNewSchedule = async (rawData) => {
       }
       if (shuttles) {
         await Promise.all(
-          shuttles.map(async (shuttle) => {
-            await db.Shuttle.create(
-              { ...shuttle, schedule: schedule.id },
-              { transaction: tx }
-            );
-          })
+          shuttles.map(
+            async ({
+              departureTime,
+              departurePlace,
+              departurePlaceLat,
+              departurePlaceLng,
+              ...shuttleInfo
+            }) => {
+              const shuttle = await db.Shuttle.create(
+                { ...shuttleInfo, schedule: schedule.id },
+                { transaction: tx }
+              );
+              const shuttleRoute = await db.ShuttleRoutes.create(
+                {
+                  shuttleId: shuttle.id,
+                  departureTime: departureTime,
+                  departurePlace: departurePlace,
+                  departurePlaceLat: departurePlaceLat,
+                  departurePlaceLng: departurePlaceLng,
+                },
+                { transaction: tx }
+              );
+            }
+          )
         );
       }
     });
@@ -119,19 +137,45 @@ const updateSchedule = async (rawData) => {
         if (shuttles) {
           await Promise.all(
             shuttles.map(async (data) => {
-              await db.Shuttle.destroy({ where: { id: data.id } });
+              await db.Shuttle.destroy({
+                where: { id: data.id },
+                transaction: tx,
+              });
             })
           );
         }
         await Promise.all(
-          shuttleInfo.map(async (data) => {
-            await db.Shuttle.create(data, { transaction: tx });
-          })
+          shuttleInfo.map(
+            async ({
+              departureTime,
+              departurePlace,
+              departurePlaceLat,
+              departurePlaceLng,
+              ...data
+            }) => {
+              const shuttle = await db.Shuttle.create(data, {
+                transaction: tx,
+              });
+              await db.ShuttleRoutes.create(
+                {
+                  shuttleId: shuttle.id,
+                  departureTime: departureTime,
+                  departurePlace: departurePlace,
+                  departurePlaceLat: departurePlaceLat,
+                  departurePlaceLng: departurePlaceLng,
+                },
+                { transaction: tx }
+              );
+            }
+          )
         );
       } else {
         await Promise.all(
           shuttles.map(async (data) => {
-            await db.Shuttle.destroy({ where: { id: data.id } });
+            await db.Shuttle.destroy({
+              where: { id: data.id },
+              transaction: tx,
+            });
           })
         );
       }
