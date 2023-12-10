@@ -58,7 +58,7 @@ const getAllSchedules = async ({
     });
     return apiReturns.success(200, "Get Schedules Successfully", schedules);
   } catch (error) {
-    console.log(error.message);
+    console.log(error);
     return apiReturns.error(400, error.message);
   }
 };
@@ -96,7 +96,7 @@ const createNewSchedule = async (rawData) => {
               ...shuttleInfo
             }) => {
               const shuttle = await db.Shuttle.create(
-                { ...shuttleInfo, schedule: schedule.id },
+                { ...shuttleInfo, scheduleId: schedule.id },
                 { transaction: tx }
               );
               const shuttleRoute = await db.ShuttleRoutes.create(
@@ -116,7 +116,7 @@ const createNewSchedule = async (rawData) => {
     });
     return apiReturns.success(200, "Create a new Schedule Successfully");
   } catch (error) {
-    console.log(error.message);
+    console.log(error);
     return apiReturns.error(400, error.message);
   }
 };
@@ -206,7 +206,7 @@ const updateSchedule = async (rawData) => {
     });
     return apiReturns.success(200, "Update Schedule Successfully");
   } catch (error) {
-    console.error(error.message);
+    console.error(error);
     return apiReturns.error(400, error.message);
   }
 };
