@@ -79,20 +79,21 @@ const confirmPayment = async (rawData) => {
           }
         })
       );
-
-      await Promise.all(
-        reservationsRoundTrip.map(async (reservationId) => {
-          const reservation = await db.Reservation.findByPk(reservationId);
-          if (!reservation) {
-            throw new Error("Can not find reservation for round Trip");
-          } else {
-            await db.Reservation.update(
-              { status: "1" },
-              { where: { id: reservation.id }, transaction: tx }
-            );
-          }
-        })
-      );
+      if (reservationsRoundTrip) {
+        await Promise.all(
+          reservationsRoundTrip.map(async (reservationId) => {
+            const reservation = await db.Reservation.findByPk(reservationId);
+            if (!reservation) {
+              throw new Error("Can not find reservation for round Trip");
+            } else {
+              await db.Reservation.update(
+                { status: "1" },
+                { where: { id: reservation.id }, transaction: tx }
+              );
+            }
+          })
+        );
+      }
     });
     return apiReturns.success(200, "Payment Successfully");
   } catch (error) {
