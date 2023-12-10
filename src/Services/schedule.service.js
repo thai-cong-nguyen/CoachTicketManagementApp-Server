@@ -241,7 +241,17 @@ const deleteSchedule = async (rawData) => {
     if (!schedule) {
       throw new Error("Schedule not found");
     }
-    await db.Schedule.destroy({ where: { id: scheduleId } });
+    await db.sequelize.transaction(async (tx) => {
+      await db.Schedule.destroy({ where: { id: scheduleId }, transaction: tx });
+      await db.Staff.update(
+        { status: true },
+        { where: { id: schedule.driverId }, transaction: tx }
+      );
+      await db.Staff.update(
+        { status: true },
+        { where: { id: schedule.coachAssistantId }, transaction: tx }
+      );
+    });
     return apiReturns.success(200, "Delete Schedule Successfully");
   } catch (error) {
     console.error(error);
