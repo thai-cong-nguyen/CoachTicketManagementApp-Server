@@ -143,23 +143,25 @@ const createNewStaff = async (rawData) => {
 
 const getWorkOfStaff = async (rawData) => {
   try {
-    const { userId } = rawData.user;
-    const staff = await db.Staff.findOne({ where: { userId: userId } });
-    if (!staff) {
-      throw new Error("No staff found");
-    }
-    const query = {
-      [Op.or]: {
-        driverId: staff.id,
-        coachAssistantId: staff.id,
-      },
-    };
-    const currentTrips = await getAllTrips({ ...query, status: "0" });
-    const historyTrips = await getAllTrips({ ...query, status: "1" });
-    const result = {
-      currentTrips: currentTrips.data.rows,
-      historyTrips: historyTrips.data.rows,
-    };
+    const staffs = await db.Staff.findAll();
+    const result = await Promise.all(
+      staffs.map(async (staff) => {
+        const query = {
+          [Op.or]: {
+            driverId: staff.id,
+            coachAssistantId: staff.id,
+          },
+        };
+        const currentTrips = await getAllTrips({ ...query, status: "0" });
+        const historyTrips = await getAllTrips({ ...query, status: "1" });
+        return {
+          staff: staff.id,
+          currentTrips: currentTrips.data.rows,
+          historyTrips: historyTrips.data.rows,
+        };
+      }),
+      []
+    );
     return apiReturns.success(200, "Get Work of Staff Successfully", result);
   } catch (error) {
     console.error(error);
