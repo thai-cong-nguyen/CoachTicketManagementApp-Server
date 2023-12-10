@@ -4,6 +4,7 @@ const { Op } = require("sequelize");
 const db = require("../Models/index");
 const apiReturns = require("../Helpers/apiReturns.helper");
 const { deleteScheduleById } = require("./schedule.service");
+const { defaults } = require("pg");
 
 const getAllRoutes = async ({ page, limit, order, ...query }) => {
   try {
@@ -89,14 +90,109 @@ const updateRoute = async (rawData) => {
   try {
     const { routeId } = rawData.params;
     const { places, ...updateData } = rawData.body;
-    const isUpdated = await db.Route.update(updateData, {
-      where: { id: routeId },
+    await db.sequelize.transaction(async (tx) => {
+      const route = await db.Route.update(updateData, {
+        where: { id: routeId },
+      });
+      if (!route) {
+        throw new Error("Route update failed");
+      }
+      if (places) {
+        const startPlaces = await db.Places.findAll({
+          where: { routeId: routeId, isPickUpPlace: "1" },
+        });
+        if (places.startPlaces) {
+          if (startPlaces) {
+            await Promise.all(
+              startPlaces.map(async (place) => {
+                if (!places.startPlaces.includes(place.placeName)) {
+                  await db.Places.destroy({
+                    where: { id: place.id },
+                    transaction: tx,
+                  });
+                }
+              })
+            );
+          }
+          await Promise.all(
+            places.startPlaces.map(async (place) => {
+              await db.Places.findOrCreate({
+                where: {
+                  routeId: routeId,
+                  placeName: place.placeName,
+                  isPickUpPlace: "1",
+                },
+                defaults: {
+                  routeId: routeId,
+                  placeName: place.placeName,
+                  isPickUpPlace: "1",
+                  placeLat: place.placeLat,
+                  placeLng: place.placeLng,
+                },
+                transaction: tx,
+              });
+            })
+          );
+        } else {
+          if (startPlaces) {
+            await Promise.all(
+              startPlaces.map(async (place) => {
+                await db.Places.destroy({ where: { id: place.id } });
+              })
+            );
+          }
+        }
+        const endPlaces = await db.Places.findAll({
+          where: { routeId: routeId, isPickUpPlace: "0" },
+        });
+        if (places.endPlaces) {
+          if (endPlaces) {
+            await Promise.all(
+              endPlaces.map(async (place) => {
+                if (!places.endPlaces.includes(place.placeName)) {
+                  await db.Places.destroy({
+                    where: { id: place.id },
+                    transaction: tx,
+                  });
+                }
+              })
+            );
+          }
+          await Promise.all(
+            places.endPlaces.map(async (place) => {
+              await db.Places.findOrCreate({
+                where: {
+                  routeId: routeId,
+                  placeName: place.placeName,
+                  isPickUpPlace: "0",
+                },
+                defaults: {
+                  routeId: routeId,
+                  placeName: place.placeName,
+                  isPickUpPlace: "0",
+                  placeLat: place.placeLat,
+                  placeLng: place.placeLng,
+                },
+                transaction: tx,
+              });
+            })
+          );
+        } else {
+          if (endPlaces) {
+            await Promise.all(
+              endPlaces.map(async (place) => {
+                await db.Places.destroy({ where: { id: place.id } });
+              })
+            );
+          }
+        }
+      }
+      const updatedRoute = await db.Route.update(data, {
+        where: { id: routeId },
+        transaction: tx,
+      });
     });
-    if (!isUpdated) {
-      return apiReturns.error(400, "Route update failed");
-    }
-    const updatedRoute = await db.Route.findOne({ where: { id: routeId } });
-    return apiReturns.success(200, "Update Route Successful", updatedRoute);
+    return apiReturns.success(200, "Update Route Successful");
   } catch (error) {
     console.error(error);
     return apiReturns.error(400, error.message);
