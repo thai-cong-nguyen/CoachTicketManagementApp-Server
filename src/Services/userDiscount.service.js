@@ -96,10 +96,10 @@ module.exports = {
       await Promise.all(
         ids.map(async (id) => {
           const checkExists = await db.UserDiscount.findOne({
-            where: { id: id, userId: userId },
+            where: { discountId: id, userId: userId },
           });
           if (checkExists) {
-            await db.UserDiscount.destroy({ where: { id: id } });
+            await db.UserDiscount.destroy({ where: { id: checkExists.id } });
           }
         })
       );
