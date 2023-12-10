@@ -131,6 +131,7 @@ const createNewStaff = async (rawData) => {
       if (!userAccount) {
         throw new Error("Can not create user account");
       }
+      info.userId = userAccount.id;
       const staff = await db.Staff.create(info, { transaction: tx });
     });
     return apiReturns.success(200, "Create Staff Successfully");

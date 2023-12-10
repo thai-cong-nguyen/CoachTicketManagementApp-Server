@@ -50,6 +50,11 @@ const filterReservationToTickets = async (reservations) => {
 };
 
 const getTickets = async ({ queries, reservationId, ...query }) => {
+  if (reservationId) {
+    query.id = {
+      [Op.in]: reservationId,
+    };
+  }
   const reservations = await db.Reservation.findAndCountAll({
     where: query,
     ...queries,
@@ -235,8 +240,6 @@ const getTickets = async ({ queries, reservationId, ...query }) => {
       ticket.ScheduleData.CoachData.ServiceData = serviceOfCoach;
     })
   );
-  // adding roundTrip ticket
-  // const addingRoundTrip = tickets.map(async (ticket) => {});
   const result = reservationId
     ? tickets.filter((ticket) =>
         arraysAreEqual(ticket.reservationId, reservationId)
@@ -261,6 +264,11 @@ const getAllTickets = async ({
     queries.limit = flimit;
     if (order) queries.order = order;
     if (userId) queries.userId = userId;
+    if (reservationId) {
+      if (typeof reservationId === "string") {
+        reservationId = [reservationId];
+      }
+    }
     const tickets = await getTickets({ queries, reservationId, ...query });
     return apiReturns.success(200, "Get Successfully", tickets);
   } catch (error) {
@@ -798,6 +806,32 @@ const cancelTicket = async (rawData) => {
     return apiReturns.error(400, error.message);
   }
 };
+const scanTicket = async (rawData) => {
+  try {
+    const { reservations } = rawData.body;
+    if (!reservations) {
+      throw new Error("No reservations");
+    }
+    await db.sequelize.transaction(async (tx) => {
+      await Promise.all(
+        reservations.map(async (reservationId) => {
+          const reservation = await db.Reservation.findByPk(reservationId);
+          if (!reservation) {
+            throw new Error("No reservation");
+          }
+          await db.Reservation.update(
+            { status: "4" },
+            { where: { id: reservation.id }, transaction: tx }
+          );
+        })
+      );
+    });
+    return apiReturns.success(200, "Scanned Ticket Successfully");
+  } catch (error) {
+    console.error(error);
+    return apiReturns.error(400, error.message);
+  }
+};
 
 module.exports = {
   getAllTickets,
@@ -808,4 +842,5 @@ module.exports = {
   confirmBookingTicket,
   acceptTicket,
   cancelTicket,
+  scanTicket,
 };
