@@ -56,6 +56,25 @@ const getAllSchedules = async ({
         },
       ],
     });
+    await Promise.all(
+      schedules.rows.map(async (schedule) => {
+        const shuttleRoutes = await db.ShuttleRoutes.findAll({
+          include: [
+            {
+              model: db.Shuttle,
+              as: "ShuttleData",
+              where: { scheduleId: schedule.id },
+              include: [
+                { model: db.Coach, as: "CoachData" },
+                { model: db.Staff, as: "DriverData" },
+                { model: db.Staff, as: "CoachAssistantData" },
+              ],
+            },
+          ],
+        });
+        schedule.ShuttleRoutesData = shuttleRoutes;
+      })
+    );
     return apiReturns.success(200, "Get Schedules Successfully", schedules);
   } catch (error) {
     console.log(error);
