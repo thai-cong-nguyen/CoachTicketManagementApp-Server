@@ -144,6 +144,7 @@ const updateSchedule = async (rawData) => {
   try {
     const { shuttleInfo, ...updateData } = rawData.body;
     const { scheduleId } = rawData.params;
+    console.log();
     await db.sequelize.transaction(async (tx) => {
       const schedule = await db.Schedule.findByPk(scheduleId);
       if (!schedule) {
@@ -172,9 +173,12 @@ const updateSchedule = async (rawData) => {
               departurePlaceLng,
               ...data
             }) => {
-              const shuttle = await db.Shuttle.create(data, {
-                transaction: tx,
-              });
+              const shuttle = await db.Shuttle.create(
+                { scheduleId: scheduleId, ...data },
+                {
+                  transaction: tx,
+                }
+              );
               await db.ShuttleRoutes.create(
                 {
                   shuttleId: shuttle.id,
