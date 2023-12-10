@@ -70,6 +70,7 @@ module.exports = (sequelize, DataTypes) => {
       arrivalPlace: DataTypes.BIGINT,
       price: DataTypes.BIGINT,
       status: DataTypes.ENUM("0", "1", "2", "3"),
+      gate: DataTypes.INTEGER,
     },
     {
       sequelize,
