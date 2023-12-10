@@ -206,13 +206,14 @@ const updateSchedule = async (rawData) => {
         where: { id: scheduleId },
         transaction: tx,
       });
+      console.log(updatedSchedule.driverId, schedule.driverId);
       if (updatedSchedule.driverId !== schedule.driverId) {
         await db.Staff.update(
           { status: false },
           { where: { id: updatedSchedule.driverId }, transaction: tx }
         );
         await db.Staff.update(
-          { status: false },
+          { status: true },
           { where: { id: schedule.driverId }, transaction: tx }
         );
       }
@@ -222,7 +223,7 @@ const updateSchedule = async (rawData) => {
           { where: { id: updatedSchedule.coachAssistantId }, transaction: tx }
         );
         await db.Staff.update(
-          { status: false },
+          { status: true },
           { where: { id: schedule.coachAssistantId }, transaction: tx }
         );
       }
