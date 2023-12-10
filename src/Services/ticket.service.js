@@ -334,7 +334,6 @@ const createBookingTicket = async (rawData) => {
       shuttle,
       roundTrip,
     } = rawData.body;
-    console.log("Body: ", rawData.body);
     let reservations = [];
     let shuttlePassenger = [];
     let reservationsRoundTrip = [];
@@ -616,7 +615,7 @@ const confirmBookingTicket = async (rawData) => {
     const {
       passengers,
       reservations,
-      passengerRoundTrip,
+      passengersRoundTrip,
       reservationsRoundTrip,
       paymentId,
       discountId,
@@ -648,15 +647,15 @@ const confirmBookingTicket = async (rawData) => {
             if (discountId) {
               info.discountId = discountId;
             }
-            const reservation = await db.Reservation.update(info, {
+            await db.Reservation.update(info, {
               where: { id: reservations[index] },
               transaction: tx,
             });
           })
         );
-        if (passengerRoundTrip && reservationsRoundTrip) {
+        if (passengersRoundTrip && reservationsRoundTrip) {
           await Promise.all(
-            passengerRoundTrip.map(async (passengerInfo, index) => {
+            passengersRoundTrip.map(async (passengerInfo, index) => {
               const [passenger, created] = await db.Passenger.findOrCreate({
                 where: { phoneNumber: passengerInfo.phoneNumber },
                 defaults: passengerInfo,
@@ -670,7 +669,7 @@ const confirmBookingTicket = async (rawData) => {
               if (discountId) {
                 info.discountId = discountId;
               }
-              const reservation = await db.Reservation.update(info, {
+              await db.Reservation.update(info, {
                 where: { id: reservationsRoundTrip[index] },
                 transaction: tx,
               });

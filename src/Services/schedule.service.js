@@ -65,7 +65,7 @@ const getAllSchedules = async ({
 
 const createNewSchedule = async (rawData) => {
   try {
-    const scheduleData = rawData.body;
+    const { shuttles, ...scheduleData } = rawData.body;
     await db.sequelize.transaction(async (tx) => {
       const schedule = await db.Schedule.create(scheduleData, {
         transaction: tx,
@@ -85,6 +85,16 @@ const createNewSchedule = async (rawData) => {
           { where: { id: scheduleData.coachAssistantId }, transaction: tx }
         );
       }
+      if (shuttles) {
+        await Promise.all(
+          shuttles.map(async (shuttle) => {
+            await db.Shuttle.create(
+              { ...shuttle, schedule: schedule.id },
+              { transaction: tx }
+            );
+          })
+        );
+      }
     });
     return apiReturns.success(200, "Create a new Schedule Successfully");
   } catch (error) {
@@ -95,12 +105,35 @@ const createNewSchedule = async (rawData) => {
 
 const updateSchedule = async (rawData) => {
   try {
-    const updateData = rawData.body;
+    const { shuttleInfo, ...updateData } = rawData.body;
     const { scheduleId } = rawData.params;
     await db.sequelize.transaction(async (tx) => {
       const schedule = await db.Schedule.findByPk(scheduleId);
       if (!schedule) {
         throw new Error("Can not find schedule");
+      }
+      const shuttles = await db.Shuttle.findAll({
+        where: { scheduleId: scheduleId },
+      });
+      if (shuttleInfo) {
+        if (shuttles) {
+          await Promise.all(
+            shuttles.map(async (data) => {
+              await db.Shuttle.destroy({ where: { id: data.id } });
+            })
+          );
+        }
+        await Promise.all(
+          shuttleInfo.map(async (data) => {
+            await db.Shuttle.create(data, { transaction: tx });
+          })
+        );
+      } else {
+        await Promise.all(
+          shuttles.map(async (data) => {
+            await db.Shuttle.destroy({ where: { id: data.id } });
+          })
+        );
       }
       const updatedSchedule = await db.Schedule.update(updateData, {
         where: { id: scheduleId },
