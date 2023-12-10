@@ -122,7 +122,7 @@ const deleteUserAccountById = async (rawData) => {
         { transaction: t }
       );
       await db.UserAccount.destroy(
-        { where: { id: rawData.params.id } },
+        { where: { id: rawData.params.userId } },
         { transaction: t }
       );
     });
