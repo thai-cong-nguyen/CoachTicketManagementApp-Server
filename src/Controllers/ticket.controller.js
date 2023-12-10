@@ -9,6 +9,7 @@ const {
   confirmBookingTicket,
   acceptTicket,
   cancelTicket,
+  scanTicket,
 } = require("../Services/ticket.service");
 
 exports.getAllTicketsController = async (req, res) => {
@@ -106,6 +107,15 @@ exports.acceptTicketController = async (req, res, next) => {
 exports.cancelTicketController = async (req, res, next) => {
   try {
     const response = await cancelTicket(req);
+    return res.status(response.code).send(response);
+  } catch (error) {
+    console.log(error.message);
+    return res.status(404).send("Something went wrong");
+  }
+};
+exports.scanTicketController = async (req, res, next) => {
+  try {
+    const response = await scanTicket(req);
     return res.status(response.code).send(response);
   } catch (error) {
     console.log(error.message);
