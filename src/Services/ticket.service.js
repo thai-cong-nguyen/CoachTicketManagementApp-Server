@@ -46,6 +46,42 @@ const filterReservationToTickets = async (reservations) => {
     }
     return acc;
   }, []);
+  await Promise.all(
+    tickets.map(async (ticket) => {
+      // Service
+      const serviceOfCoach = await listServiceNameForCoach(
+        ticket.ScheduleData.coachId
+      );
+      // Shuttle
+      const shuttlePassenger = await db.ShuttlePassengers.findAll({
+        where: {
+          reservationId: {
+            [Op.in]: ticket.reservationId,
+          },
+        },
+        attributes: ["id", "reservationId", "shuttleRouteId"],
+        include: [
+          {
+            model: db.ShuttleRoutes,
+            as: "ShuttleRouteData",
+            include: [
+              {
+                model: db.Shuttle,
+                as: "ShuttleData",
+                include: [
+                  { model: db.Coach, as: "CoachData" },
+                  { model: db.Staff, as: "DriverData" },
+                  { model: db.Staff, as: "CoachAssistantData" },
+                ],
+              },
+            ],
+          },
+        ],
+      });
+      ticket.ShuttleTicketData = shuttlePassenger;
+      ticket.ScheduleData.CoachData.ServiceData = serviceOfCoach;
+    })
+  );
   return tickets;
 };
 
@@ -110,35 +146,10 @@ const getTickets = async ({ queries, reservationId, ...query }) => {
     ],
   });
   const tickets = await filterReservationToTickets(reservations);
-  // adding service of Coach, shuttle, roundTrip ticket in ticket
+
+  //roundTrip ticket in ticket
   await Promise.all(
     tickets.map(async (ticket) => {
-      // Service
-      const serviceOfCoach = await listServiceNameForCoach(
-        ticket.ScheduleData.coachId
-      );
-      // Shuttle
-      const shuttlePassenger = await db.ShuttlePassengers.findAll({
-        where: {
-          reservationId: {
-            [Op.in]: ticket.reservationId,
-          },
-        },
-        attributes: ["id", "reservationId", "shuttleRouteId"],
-        include: [
-          {
-            model: db.ShuttleRoutes,
-            as: "ShuttleRouteData",
-            include: [
-              {
-                model: db.Shuttle,
-                as: "ShuttleData",
-                include: [{ model: db.Coach, as: "CoachData" }],
-              },
-            ],
-          },
-        ],
-      });
       // RoundTrip ticket
       const queryRoundTripTicket = {};
       queryRoundTripTicket.isRoundTrip = true;
@@ -154,6 +165,7 @@ const getTickets = async ({ queries, reservationId, ...query }) => {
       queryRoundTripTicket.reservationDate = ticket.reservationDate;
       const reservationsRoundTrip = await db.Reservation.findAndCountAll({
         where: queryRoundTripTicket,
+        ...queries,
         include: [
           {
             model: db.Schedule,
@@ -205,39 +217,10 @@ const getTickets = async ({ queries, reservationId, ...query }) => {
           },
         ],
       });
-      const ticketRoundTrip = await filterReservationToTickets(
+      const ticketsRoundTrip = await filterReservationToTickets(
         reservationsRoundTrip
       );
-      // shuttle Round Trip
-      const shuttlePassengerRoundTrip = await Promise.all(
-        ticketRoundTrip.map(async (ticket) => {
-          return await db.ShuttlePassengers.findAll({
-            where: {
-              reservationId: {
-                [Op.in]: ticket.reservationId,
-              },
-            },
-            attributes: ["id", "reservationId", "shuttleRouteId"],
-            include: [
-              {
-                model: db.ShuttleRoutes,
-                as: "ShuttleRouteData",
-                include: [
-                  {
-                    model: db.Shuttle,
-                    as: "ShuttleData",
-                    include: [{ model: db.Coach, as: "CoachData" }],
-                  },
-                ],
-              },
-            ],
-          });
-        }, [])
-      );
-      ticket.ShuttleTicketData = shuttlePassenger;
-      ticket.RoundTripTicketData = ticketRoundTrip;
-      ticket.ShuttleTicketRoundTripData = shuttlePassengerRoundTrip;
-      ticket.ScheduleData.CoachData.ServiceData = serviceOfCoach;
+      ticket.RoundTripTicketData = ticketsRoundTrip || [];
     })
   );
   const result = reservationId

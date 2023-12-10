@@ -45,20 +45,12 @@ const getAllShuttle = async ({ page, limit, order, ...query }) => {
           model: db.Staff,
           as: "CoachAssistantData",
         },
-        {
-          model: db.Places,
-          as: "DeparturePlaceData",
-        },
-        {
-          model: db.Places,
-          as: "ArrivalPlaceData",
-        },
       ],
     });
     const res = await shuttleRouteForShuttle(shuttles);
     return apiReturns.success(200, "Get Successfully", res);
   } catch (error) {
-    console.error(error.message);
+    console.error(error);
     return apiReturns.error(400, error.message);
   }
 };
@@ -80,7 +72,7 @@ const updateShuttle = async (rawData) => {
     const data = rawData.body;
     const shuttle = await db.Shuttle.update(data, { where: { id: id } });
   } catch (error) {
-    console.error(error.message);
+    console.error(error);
     return apiReturns.error(400, error.message);
   }
 };
