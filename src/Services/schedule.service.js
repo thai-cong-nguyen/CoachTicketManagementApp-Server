@@ -144,7 +144,6 @@ const updateSchedule = async (rawData) => {
   try {
     const { shuttleInfo, ...updateData } = rawData.body;
     const { scheduleId } = rawData.params;
-    console.log();
     await db.sequelize.transaction(async (tx) => {
       const schedule = await db.Schedule.findByPk(scheduleId);
       if (!schedule) {
@@ -202,11 +201,11 @@ const updateSchedule = async (rawData) => {
           })
         );
       }
-      const updatedSchedule = await db.Schedule.update(updateData, {
+      await db.Schedule.update(updateData, {
         where: { id: scheduleId },
         transaction: tx,
       });
-      console.log(updatedSchedule.driverId, schedule.driverId);
+      const updatedSchedule = await db.Schedule.findByPk(scheduleId);
       if (updatedSchedule.driverId !== schedule.driverId) {
         await db.Staff.update(
           { status: false },
