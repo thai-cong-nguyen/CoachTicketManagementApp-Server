@@ -627,6 +627,9 @@ const confirmBookingTicket = async (rawData) => {
               paymentId: paymentId,
               reservationPhoneNumber: passengerInfo.phoneNumber,
             };
+            if (paymentId === "2") {
+              info.status = "1";
+            }
             if (discountId) {
               info.discountId = discountId;
             }
@@ -649,6 +652,9 @@ const confirmBookingTicket = async (rawData) => {
                 paymentId: paymentId,
                 reservationPhoneNumber: passengerInfo.phoneNumber,
               };
+              if (paymentId === "2") {
+                info.status = "1";
+              }
               if (discountId) {
                 info.discountId = discountId;
               }
