@@ -21,7 +21,7 @@ router.get("/user", getAllTicketsOfUsersController);
 router.get("/history", getUserTicketsHistoryController);
 router.post("/create-booking", bookingTicketController);
 router.delete("/cancel-booking", cancelBookingTicketController);
-router.post("/confirm-ticket-info", confirmBookingTicketController);
+router.delete("/confirm-ticket-info", confirmBookingTicketController);
 router.patch("/cancel", cancelTicketController);
 router.patch("/scan", scanTicketController);
 router.use(isAdminOrManager);
