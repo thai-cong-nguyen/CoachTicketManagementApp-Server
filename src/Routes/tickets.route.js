@@ -20,7 +20,7 @@ router.get("/", getAllTicketsController);
 router.get("/user", getAllTicketsOfUsersController);
 router.get("/history", getUserTicketsHistoryController);
 router.post("/create-booking", bookingTicketController);
-router.post("/cancel-booking", cancelBookingTicketController);
+router.delete("/cancel-booking", cancelBookingTicketController);
 router.post("/confirm-ticket-info", confirmBookingTicketController);
 router.patch("/cancel", cancelTicketController);
 router.patch("/scan", scanTicketController);
