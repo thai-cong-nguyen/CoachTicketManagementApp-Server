@@ -17,13 +17,14 @@ const {
   isStaff,
   isManager,
   isAdminOrStaff,
+  isAdminOrManager,
 } = require("../Middlewares/verifyRoles.middleware");
 
 // Staff Router
 router.use(verifyJWT);
 router.get("/", getAllStaffsController);
+router.use("/works", isAdminOrManager, getWorkOfStaffController);
 router.use(isAdmin);
-router.use("/works", getWorkOfStaffController);
 router.post("/", uploadImageMiddleware, createNewStaffControllers);
 router.delete("/:staffId", deleteStaffsByIdController);
 
