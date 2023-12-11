@@ -16,6 +16,7 @@ const {
   isStaff,
   isManager,
   isAdminOrStaff,
+  isAdminOrManager,
 } = require("../Middlewares/verifyRoles.middleware");
 const upload = multer({ storage: multer.memoryStorage() });
 
@@ -51,8 +52,8 @@ router.patch(
 );
 router.patch("/updateRewardPoint", updateRewardPointController);
 // Admin permission
+router.get("/", isAdminOrManager, getAllUserAccountsController);
 router.use(isAdmin);
-router.get("/", getAllUserAccountsController);
 router.delete("/:userId", deleteUserAccountByIdController);
 
 module.exports = router;
