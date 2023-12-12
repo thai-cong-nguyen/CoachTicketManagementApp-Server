@@ -328,7 +328,6 @@ const createBookingTicket = async (rawData) => {
         console.log("Create Booking Ticket Transaction started");
         try {
           const currentTime = new Date().toISOString();
-          console.log("Current Time: " + currentTime);
           const schedule = await db.Schedule.findByPk(scheduleId, {
             transaction: tx,
           });
@@ -348,7 +347,11 @@ const createBookingTicket = async (rawData) => {
           await Promise.all(
             seats.map(async (seat) => {
               const [reservation, created] = await db.Reservation.findOrCreate({
-                where: { scheduleId: scheduleId, seatNumber: seat },
+                where: {
+                  scheduleId: scheduleId,
+                  seatNumber: seat,
+                  [Op.or]: [{ status: "1" }, { status: "0" }],
+                },
                 defaults: {
                   userId: rawData.user.userId,
                   scheduleId: scheduleId,
@@ -442,6 +445,7 @@ const createBookingTicket = async (rawData) => {
                     where: {
                       scheduleId: roundTrip.scheduleId,
                       seatNumber: seat,
+                      [Op.or]: [{ status: "1" }, { status: "0" }],
                     },
                     defaults: {
                       userId: rawData.user.userId,
@@ -516,7 +520,7 @@ const createBookingTicket = async (rawData) => {
           }
         } catch (error) {
           console.error("Error in transaction:", error);
-          throw new Error("Error in transaction: " + error.message);
+          throw new Error(error.message);
         }
         console.log("Create Booking Ticket Transaction completed");
       }
@@ -577,7 +581,7 @@ const cancelBookingTicket = async (rawData) => {
           }
         } catch (error) {
           console.error("Error in transaction:", error);
-          throw new Error("Error in transaction: " + error.message);
+          throw new Error(error.message);
         }
         console.log("Cancel Booking Ticket Transaction completed");
       }
@@ -667,7 +671,7 @@ const confirmBookingTicket = async (rawData) => {
         }
       } catch (error) {
         console.error("Error in transaction:", error);
-        throw new Error("Error in transaction: " + error.message);
+        throw new Error(error.message);
       }
       console.log("Transaction completed");
     });

@@ -264,7 +264,12 @@ const countNumberOfPassengerByScheduleId = async (
   transaction = null
 ) => {
   const reservations = await db.Reservation.findAndCountAll({
-    where: { scheduleId: scheduleId },
+    where: {
+      scheduleId: scheduleId,
+      status: {
+        [Op.in]: ["0", "1"],
+      },
+    },
     transaction: transaction ? transaction : null,
   });
   return reservations ? reservations.count : 0;
