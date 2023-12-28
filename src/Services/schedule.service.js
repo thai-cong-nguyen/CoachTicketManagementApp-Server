@@ -305,7 +305,7 @@ const finishedSchedule = async (rawData) => {
           throw new Error("Schedule not found");
         }
         await db.Schedule.update(
-          { status: "1" },
+          { status: "3" },
           { where: { id: scheduleId }, transaction: tx }
         );
         await db.Staff.update(

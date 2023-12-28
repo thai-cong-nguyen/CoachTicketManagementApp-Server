@@ -9,14 +9,15 @@ const {
 } = require("../Controllers/schedule.controller");
 
 const { verifyJWT } = require("../Middlewares/JWT.middleware");
-const { isAdmin } = require("../Middlewares/verifyRoles.middleware");
+const { isAdmin, isStaff } = require("../Middlewares/verifyRoles.middleware");
 
 router.use(verifyJWT);
 router.get("/", getAllSchedulesController);
+router.use(isStaff);
+router.patch("/finish/:scheduleId", finishedScheduleController);
 router.use(isAdmin);
 router.post("/", createNewScheduleController);
 router.patch("/:scheduleId", updateScheduleController);
 router.delete("/:scheduleId", deleteScheduleController);
-router.patch("/finish/:scheduleId", finishedScheduleController);
 
 module.exports = router;
