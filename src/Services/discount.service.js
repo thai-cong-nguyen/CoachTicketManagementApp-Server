@@ -13,7 +13,12 @@ module.exports = {
       const pageLimit = +limit || +process.env.PAGINATION_LIMIT;
       queries.offset = offset * pageLimit;
       queries.limit = pageLimit;
-      if (order) queries.order = order;
+      if (order && order.trim() !== "") {
+        const arrayOrder = order.split(",");
+        queries.order = [[arrayOrder[0], arrayOrder[1]]]; // 'ASC' for ascending, 'DESC' for descending
+      } else {
+        queries.order = [["id", "ASC"]];
+      }
       if (discountId) queries.discountId = discountId;
       const discounts = await db.Discount.findAndCountAll({
         where: query,

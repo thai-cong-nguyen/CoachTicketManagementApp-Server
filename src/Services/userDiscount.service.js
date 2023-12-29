@@ -19,7 +19,12 @@ module.exports = {
       const pageLimit = +limit || +process.env.PAGINATION_LIMIT;
       queries.offset = offset * pageLimit;
       queries.limit = pageLimit;
-      if (order) queries.order = order;
+      if (order && order.trim() !== "") {
+        const arrayOrder = order.split(",");
+        queries.order = [[arrayOrder[0], arrayOrder[1]]]; // 'ASC' for ascending, 'DESC' for descending
+      } else {
+        queries.order = [["id", "ASC"]];
+      }
       if (userId) query.userId = userId;
       if (discountId) query.discountId = discountId;
       const userDiscount = await db.UserDiscount.findAndCountAll({
