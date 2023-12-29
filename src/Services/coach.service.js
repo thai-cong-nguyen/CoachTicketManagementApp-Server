@@ -92,10 +92,15 @@ const getAllCoaches = async ({ page, limit, order, ...query }) => {
     // Order And Queries
     const queries = { raw: true, nest: true };
     const offset = !page || +page <= 1 ? 0 : +page - 1;
-    const flimit = +limit || +process.env.PAGINATION_LIMIT;
-    queries.offset = offset * flimit;
-    queries.limit = flimit;
-    if (order) queries.order = [order];
+    const fLimit = +limit || +process.env.PAGINATION_LIMIT;
+    queries.offset = offset * fLimit;
+    queries.limit = fLimit;
+    if (order && order.trim() !== "") {
+      const arrayOrder = order.split(",");
+      queries.order = [[arrayOrder[0], arrayOrder[1]]]; // 'ASC' for ascending, 'DESC' for descending
+    } else {
+      queries.order = [["id", "ASC"]];
+    }
     const coaches = await db.Coach.findAndCountAll({
       where: query,
       ...queries,

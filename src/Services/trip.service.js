@@ -31,8 +31,13 @@ const getAllTrips = async ({
       offset:
         (!page || +page <= 1 ? 0 : +page - 1) *
         (+limit || +process.env.PAGINATION_LIMIT),
-      order: order || undefined,
     };
+    if (order && order.trim() !== "") {
+      const arrayOrder = order.split(",");
+      queries.order = [[arrayOrder[0], arrayOrder[1]]]; // 'ASC' for ascending, 'DESC' for descending
+    } else {
+      queries.order = [["id", "ASC"]];
+    }
     let roundTripQuery = {};
     // Add conditions for "from" and "to" places.
     if (from) {

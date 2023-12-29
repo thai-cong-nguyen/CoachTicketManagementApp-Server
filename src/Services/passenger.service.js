@@ -2,20 +2,21 @@ require("dotenv").config();
 const { Op } = require("sequelize");
 const db = require("../Models/index");
 const apiReturns = require("../Helpers/apiReturns.helper");
-const { getRolesUser } = require("../Services/jwt.service");
-
-const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN;
-// const salt = bcrypt.genSaltSync(10);
 
 const getAllPassengers = async ({ page, limit, order, ...query }) => {
   try {
     // Order And Queries
     const queries = { raw: true, nest: true };
     const offset = !page || +page <= 1 ? 0 : +page - 1;
-    const flimit = +limit || +process.env.PAGINATION_LIMIT;
-    queries.offset = offset * flimit;
-    queries.limit = flimit;
-    if (order) queries.order = [order];
+    const fLimit = +limit || +process.env.PAGINATION_LIMIT;
+    queries.offset = offset * fLimit;
+    queries.limit = fLimit;
+    if (order && order.trim() !== "") {
+      const arrayOrder = order.split(",");
+      queries.order = [[arrayOrder[0], arrayOrder[1]]]; // 'ASC' for ascending, 'DESC' for descending
+    } else {
+      queries.order = [["id", "ASC"]];
+    }
     const passengers = await db.Passenger.findAndCountAll({
       where: query,
       ...queries,

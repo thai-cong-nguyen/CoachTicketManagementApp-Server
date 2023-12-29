@@ -24,7 +24,12 @@ const getAllStaffs = async ({ page, limit, order, ...query }) => {
     const fLimit = +limit || +process.env.PAGINATION_LIMIT;
     queries.offset = offset * fLimit;
     queries.limit = fLimit;
-    if (order) queries.order = order;
+    if (order && order.trim() !== "") {
+      const arrayOrder = order.split(",");
+      queries.order = [[arrayOrder[0], arrayOrder[1]]]; // 'ASC' for ascending, 'DESC' for descending
+    } else {
+      queries.order = [["id", "ASC"]];
+    }
     const staffs = await db.Staff.findAndCountAll({
       where: {
         ...query,
