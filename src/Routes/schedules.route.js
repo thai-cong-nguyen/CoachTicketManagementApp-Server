@@ -13,8 +13,7 @@ const { isAdmin, isStaff } = require("../Middlewares/verifyRoles.middleware");
 
 router.use(verifyJWT);
 router.get("/", getAllSchedulesController);
-router.use(isStaff);
-router.patch("/finish/:scheduleId", finishedScheduleController);
+router.patch("/finish/:scheduleId", isStaff, finishedScheduleController);
 router.use(isAdmin);
 router.post("/", createNewScheduleController);
 router.patch("/:scheduleId", updateScheduleController);
