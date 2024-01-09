@@ -375,40 +375,6 @@ const getPopularTrip = async (rawData) => {
         },
       },
       attributes: ["id"],
-      // include: [
-      //   {
-      //     model: db.Coach,
-      //     as: "CoachData",
-      //     include: [
-      //       {
-      //         model: db.CoachType,
-      //         as: "CoachTypeData",
-      //       },
-      //     ],
-      //   },
-      //   {
-      //     model: db.Route,
-      //     as: "RouteData",
-      //   },
-      //   {
-      //     model: db.Staff,
-      //     as: "DriverData",
-      //     attributes: ["id", "fullName", "phoneNumber", "gender"],
-      //   },
-      //   {
-      //     model: db.Staff,
-      //     as: "CoachAssistantData",
-      //     attributes: ["id", "fullName", "phoneNumber", "gender"],
-      //   },
-      //   {
-      //     model: db.Places,
-      //     as: "StartPlaceData",
-      //   },
-      //   {
-      //     model: db.Places,
-      //     as: "ArrivalPlaceData",
-      //   },
-      // ],
     });
     let mostOfPassenger = 0;
     let scheduleId = null;
