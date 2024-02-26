@@ -4,7 +4,7 @@
   "description": "",
   "main": "server.js",
   "scripts": {
-    "test": "mocha --coverage",
+    "test": "mocha --exit",
     "stryker": "stryker run",
     "start": "nodemon server.js",
     "redis": "redis-server"
