@@ -16,6 +16,8 @@ app.use(cors());
 app.use(express.json());
 app.use(cookieParser());
 
+module.exports = app;
+
 // Initialize API Routes
 apiWebRoutes(app);
 
