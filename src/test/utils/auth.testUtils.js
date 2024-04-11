@@ -19,4 +19,8 @@ const hashPassword = (password) => {
   });
 };
 
+const user = {
+    userAccount: 
+}
+
 module.exports = { hashPassword };

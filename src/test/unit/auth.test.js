@@ -17,6 +17,9 @@ const authController = require("../../Controllers/auth.controller");
 const UserAccountModel = require("../../Models/useraccount");
 
 describe("Auth Controller", () => {
+  beforeEach(() => {
+    // Database
+  });
   describe("login", () => {
     it("should return a token when valid credentials are provided", async () => {
       // Mock the request and response objects
@@ -43,4 +46,8 @@ describe("Auth Controller", () => {
 
     it("should return an error when invalid user data is provided", async () => {});
   });
+});
+
+describe("first", () => {
+  second;
 });
