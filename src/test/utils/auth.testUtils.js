@@ -19,8 +19,8 @@ const hashPassword = (password) => {
   });
 };
 
-const user = {
-    userAccount: 
-}
+// const user = {
+//     userAccount:
+// }
 
 module.exports = { hashPassword };
